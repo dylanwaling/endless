@@ -6,7 +6,7 @@ DEBUG_GRID_COLOR  = (255, 0, 0)
 DEBUG_GRID_RADIUS = 10
 
 # --- Screen & Frame Settings ---
-FPS = 60
+FPS      = 60
 SCREEN_W = 0   # will be set in main()
 SCREEN_H = 0
 
@@ -41,9 +41,14 @@ HOTBAR_PADDING   = 4
 SPAWN_PROTECT_WIDTH  = 5
 SPAWN_PROTECT_HEIGHT = 5
 
-# --- Lighting Settings (added) ---
-# how many tiles out the player’s light reaches
+# --- Lighting Settings ---
+# how many tiles out the player's light reaches
 LIGHT_RADIUS_TILES = 6
 
 # maximum darkness alpha (0 = no dark, 255 = pitch black)
 MAX_DARKNESS       = 200
+
+# --- Core Shading Depth (tiles) ---
+# number of tiles from a lit edge before you reach full black.
+# 2–3: tight, quick darkening; 6–8: long gentle fade.
+MAX_CORE_DEPTH     = 4
