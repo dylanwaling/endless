@@ -1,14 +1,12 @@
 # main.py
 
-import pygame
-import sys
-import os
+import pygame, sys, os
 from noise import pnoise2  # pip install noise
 
 # === Debug Options ===
 DEBUG_MODE        = False
 DEBUG_GRID_COLOR  = (255, 0, 0)
-DEBUG_GRID_RADIUS = 10   # how many tiles out from the player
+DEBUG_GRID_RADIUS = 10   # tiles in each direction
 
 # === Screen & Tile Settings ===
 SCREEN_W, SCREEN_H = 640, 480
@@ -17,7 +15,7 @@ FPS               = 60
 
 # === Chunk Settings ===
 CHUNK_SIZE  = 16       # tiles per chunk side
-LOAD_RADIUS = 2        # chunks out from player to load
+LOAD_RADIUS = 2        # chunks out from player to keep loaded
 
 # === Assets ===
 ASSETS_DIR         = "assets"
@@ -29,39 +27,43 @@ PLAYER_SPRITE_FILE = "sprite_player.png"
 TILE_EMPTY = 0
 TILE_DIRT  = 1
 
-# --- Pygame Initialization ---
+# --- Pygame init ---
 pygame.init()
-pygame.key.set_repeat(200, 100)  # enable holding arrow keys
+pygame.key.set_repeat(200, 100)
 screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
 clock  = pygame.time.Clock()
 font   = pygame.font.SysFont(None, 18)
 
-# --- Load & scale sprites ---
-def load_sprite(filename):
-    path = os.path.join(ASSETS_DIR, filename)
-    img  = pygame.image.load(path).convert_alpha()
+# --- Load sprites ---
+def load_sprite(fn):
+    img = pygame.image.load(os.path.join(ASSETS_DIR, fn)).convert_alpha()
     return pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
 
 floor_img  = load_sprite(FLOOR_TILE_FILE)
 wall_img   = load_sprite(WALL_TILE_FILE)
 player_img = load_sprite(PLAYER_SPRITE_FILE)
 
-# --- Light mask for torch effect ---
-def make_light_mask(radius):
-    mask = pygame.Surface((radius*2, radius*2), flags=pygame.SRCALPHA)
-    for r in range(radius, 0, -1):
-        alpha = int(255 * (r / radius))
-        pygame.draw.circle(mask, (0,0,0,alpha), (radius, radius), r)
+# --- Light mask ---
+def make_light_mask(r):
+    mask = pygame.Surface((r*2, r*2), flags=pygame.SRCALPHA)
+    for radius in range(r, 0, -1):
+        a = int(255 * (radius / r))
+        pygame.draw.circle(mask, (0,0,0,a), (r, r), radius)
     return mask
 
 LIGHT_RADIUS = TILE_SIZE * 3
 light_mask   = make_light_mask(LIGHT_RADIUS)
 
-# === Chunk storage: (cx,cy) → (floor, wall) arrays ===
+# === Chunk storage ===
+# key: (cx,cy) → (floor_array, wall_array)
 chunks = {}
 
 def gen_chunk(cx, cy):
-    """Procedurally generate a chunk's floor & wall using Perlin noise."""
+    """
+    Generate a chunk where:
+      - Perlin noise > 0 ⇒ floor (dirt), no wall
+      - noise ≤ 0  ⇒ no floor, but wall (rock)
+    """
     floor = [[TILE_EMPTY]*CHUNK_SIZE for _ in range(CHUNK_SIZE)]
     wall  = [[TILE_EMPTY]*CHUNK_SIZE for _ in range(CHUNK_SIZE)]
     for ly in range(CHUNK_SIZE):
@@ -71,52 +73,52 @@ def gen_chunk(cx, cy):
             n  = pnoise2(wx*0.1, wy*0.1, octaves=2)
             if n > 0.0:
                 floor[ly][lx] = TILE_DIRT
+            else:
+                wall[ly][lx]  = TILE_DIRT
     return floor, wall
 
 def load_chunks_around(px, py):
-    """Ensure all chunks within LOAD_RADIUS of player exist; unload others."""
+    """Keep only the chunks within LOAD_RADIUS of (px,py)."""
     pcx, _ = divmod(px, CHUNK_SIZE)
     pcy, _ = divmod(py, CHUNK_SIZE)
     needed = {
-        (pcx + dx, pcy + dy)
+        (pcx+dx, pcy+dy)
         for dx in range(-LOAD_RADIUS, LOAD_RADIUS+1)
         for dy in range(-LOAD_RADIUS, LOAD_RADIUS+1)
     }
+    # generate new
     for coord in needed:
         if coord not in chunks:
             chunks[coord] = gen_chunk(*coord)
+    # unload far ones
     for coord in list(chunks):
         if coord not in needed:
             del chunks[coord]
+    # carve spawn tunnel at (0,0)
+    if (0,0) in chunks:
+        f, w = chunks[(0,0)]
+        f[0][0] = TILE_DIRT   # ensure floor
+        w[0][0] = TILE_EMPTY  # no wall
 
-# === Player State (in world tile coords) ===
+# === Player state ===
 player_x = 0
 player_y = 0
-
-# Force spawn tile to be dirt
-load_chunks_around(player_x, player_y)
-# spawn is in chunk (0,0) at local (0,0)
-if (0,0) in chunks:
-    spawn_floor, _ = chunks[(0,0)]
-    spawn_floor[0][0] = TILE_DIRT
 
 def can_walk(x, y):
     cx, lx = divmod(x, CHUNK_SIZE)
     cy, ly = divmod(y, CHUNK_SIZE)
     floor, wall = chunks.get((cx, cy), (None, None))
-    if floor is None:
-        return False
+    if floor is None: return False
     return floor[ly][lx] == TILE_DIRT and wall[ly][lx] == TILE_EMPTY
 
-# === Main Game Loop ===
+# === Main Loop ===
 running = True
 while running:
-    # --- Event Handling ---
+    # ── INPUT ──
     for ev in pygame.event.get():
         if ev.type == pygame.QUIT:
             running = False
 
-        # Continuous movement
         elif ev.type == pygame.KEYDOWN:
             nx, ny = player_x, player_y
             if ev.key == pygame.K_LEFT:  nx -= 1
@@ -126,86 +128,78 @@ while running:
             if can_walk(nx, ny):
                 player_x, player_y = nx, ny
 
-        # Digging / Building
         elif ev.type == pygame.MOUSEBUTTONDOWN:
             mx, my = ev.pos
-            center_x = SCREEN_W // 2
-            center_y = SCREEN_H // 2
-            world_x = (mx - center_x) // TILE_SIZE + player_x
-            world_y = (my - center_y) // TILE_SIZE + player_y
-            cx, lx = divmod(world_x, CHUNK_SIZE)
-            cy, ly = divmod(world_y, CHUNK_SIZE)
-            floor, wall = chunks[(cx, cy)]
-            if ev.button == 1:  # Left click: dig
+            cx = SCREEN_W//2; cy = SCREEN_H//2
+            wx = (mx - cx)//TILE_SIZE + player_x
+            wy = (my - cy)//TILE_SIZE + player_y
+            ccx, lx = divmod(wx, CHUNK_SIZE)
+            ccy, ly = divmod(wy, CHUNK_SIZE)
+            floor, wall = chunks[(ccx, ccy)]
+            if ev.button == 1:  # dig
                 if wall[ly][lx] != TILE_EMPTY:
                     wall[ly][lx] = TILE_EMPTY
                 else:
                     floor[ly][lx] = TILE_EMPTY
-            elif ev.button == 3:  # Right click: build
+            elif ev.button == 3:  # place
                 if floor[ly][lx] == TILE_EMPTY:
                     floor[ly][lx] = TILE_DIRT
                 else:
                     wall[ly][lx] = TILE_DIRT
 
-    # Load/unload nearby chunks
+    # ── GENERATION ──
     load_chunks_around(player_x, player_y)
 
-    # Compute camera so player is centered on screen
-    center_x = SCREEN_W // 2
-    center_y = SCREEN_H // 2
-    cam_x = center_x - player_x * TILE_SIZE
-    cam_y = center_y - player_y * TILE_SIZE
+    # ── CAMERA ──
+    cx = SCREEN_W//2 - player_x * TILE_SIZE
+    cy = SCREEN_H//2 - player_y * TILE_SIZE
 
-    # --- Draw World ---
-    screen.fill((20, 20, 30))
-    for (cx, cy), (floor, wall) in chunks.items():
-        base_x = cx * CHUNK_SIZE * TILE_SIZE + cam_x
-        base_y = cy * CHUNK_SIZE * TILE_SIZE + cam_y
+    # ── RENDER ──
+    screen.fill((20,20,30))
+    for (chunk_x, chunk_y), (floor, wall) in chunks.items():
+        bx = chunk_x*CHUNK_SIZE*TILE_SIZE + cx
+        by = chunk_y*CHUNK_SIZE*TILE_SIZE + cy
         for ly in range(CHUNK_SIZE):
             for lx in range(CHUNK_SIZE):
-                px = base_x + lx * TILE_SIZE
-                py = base_y + ly * TILE_SIZE
-                if not (-TILE_SIZE < px < SCREEN_W and -TILE_SIZE < py < SCREEN_H):
+                px = bx + lx*TILE_SIZE
+                py = by + ly*TILE_SIZE
+                if not (-TILE_SIZE<px<SCREEN_W and -TILE_SIZE<py<SCREEN_H):
                     continue
                 if floor[ly][lx] == TILE_DIRT:
                     screen.blit(floor_img, (px, py))
                 if wall[ly][lx] == TILE_DIRT:
-                    screen.blit(wall_img, (px, py))
+                    screen.blit(wall_img,  (px, py))
 
-    # Draw player at screen center
-    screen.blit(player_img, (center_x, center_y))
+    # player at center
+    screen.blit(player_img, (SCREEN_W//2, SCREEN_H//2))
 
-    # --- Lighting Overlay ---
-    darkness = pygame.Surface((SCREEN_W, SCREEN_H), flags=pygame.SRCALPHA)
-    darkness.fill((0, 0, 0, 200))
-    darkness.blit(
-        light_mask,
-        (center_x - LIGHT_RADIUS, center_y - LIGHT_RADIUS),
-        special_flags=pygame.BLEND_RGBA_SUB
-    )
-    screen.blit(darkness, (0, 0))
+    # lighting
+    dark = pygame.Surface((SCREEN_W, SCREEN_H), flags=pygame.SRCALPHA)
+    dark.fill((0,0,0,200))
+    dark.blit(light_mask,
+              (SCREEN_W//2-LIGHT_RADIUS, SCREEN_H//2-LIGHT_RADIUS),
+              special_flags=pygame.BLEND_RGBA_SUB)
+    screen.blit(dark, (0,0))
 
-    # --- Debug Grid (world‐anchored) ---
+    # ── DEBUG GRID ──
     if DEBUG_MODE:
-        # Vertical lines and world X labels
-        for wx in range(player_x - DEBUG_GRID_RADIUS, player_x + DEBUG_GRID_RADIUS + 1):
-            sx = wx * TILE_SIZE + cam_x
-            pygame.draw.line(screen, DEBUG_GRID_COLOR, (sx, 0), (sx, SCREEN_H), 1)
-            label = font.render(str(wx), True, DEBUG_GRID_COLOR)
-            screen.blit(label, (sx + 2, 2))
-        # Horizontal lines and world Y labels
-        for wy in range(player_y - DEBUG_GRID_RADIUS, player_y + DEBUG_GRID_RADIUS + 1):
-            sy = wy * TILE_SIZE + cam_y
-            pygame.draw.line(screen, DEBUG_GRID_COLOR, (0, sy), (SCREEN_W, sy), 1)
-            label = font.render(str(wy), True, DEBUG_GRID_COLOR)
-            screen.blit(label, (2, sy + 2))
+        # vertical lines + labels
+        for wx in range(player_x-DEBUG_GRID_RADIUS, player_x+DEBUG_GRID_RADIUS+1):
+            sx = wx*TILE_SIZE + cx
+            pygame.draw.line(screen, DEBUG_GRID_COLOR, (sx,0),(sx,SCREEN_H),1)
+            lab = font.render(str(wx), True, DEBUG_GRID_COLOR)
+            screen.blit(lab, (sx+2,2))
+        # horizontal
+        for wy in range(player_y-DEBUG_GRID_RADIUS, player_y+DEBUG_GRID_RADIUS+1):
+            sy = wy*TILE_SIZE + cy
+            pygame.draw.line(screen, DEBUG_GRID_COLOR, (0,sy),(SCREEN_W,sy),1)
+            lab = font.render(str(wy), True, DEBUG_GRID_COLOR)
+            screen.blit(lab, (2,sy+2))
 
-    # --- Coordinate Readout ---
-    coord_text = f"({player_x}, {player_y})"
-    coord_surf = font.render(coord_text, True, (255, 255, 255))
-    screen.blit(coord_surf, (10, 10))
+    # ── COORD READOUT ──
+    coord_surf = font.render(f"({player_x}, {player_y})", True, (255,255,255))
+    screen.blit(coord_surf, (10,10))
 
-    # --- Finish Frame ---
     pygame.display.flip()
     clock.tick(FPS)
 
