@@ -36,3 +36,8 @@ PLAYER_SPRITE_FILE = "sprite_player.png"
 # Protects all blocks where |x| ≤ WIDTH and |y| ≤ HEIGHT
 SPAWN_PROTECT_WIDTH  = 5
 SPAWN_PROTECT_HEIGHT = 5
+
+# Hotbar
+HOTBAR_SLOTS      = 10
+HOTBAR_SLOT_SIZE  = 40    # pixels
+HOTBAR_PADDING    = 4     # px between slots
