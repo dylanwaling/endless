@@ -1,46 +1,65 @@
-import os
+# assets.py
+
 import pygame
+import os
 import settings
 
-# Raw surfaces, loaded once after display init:
-_floor = _wall = _player = None
-
-# Scaled assets & lighting placeholders:
+# — Globals —
 TILE_SIZE    = None
 floor_img    = None
 wall_img     = None
 player_img   = None
 LIGHT_RADIUS = None
 light_mask   = None
+move_speed   = None
 
-def init_assets():
-    global _floor, _wall, _player
-    _floor  = pygame.image.load(os.path.join(settings.ASSETS_DIR, settings.FLOOR_TILE_FILE)).convert_alpha()
-    _wall   = pygame.image.load(os.path.join(settings.ASSETS_DIR, settings.WALL_TILE_FILE )).convert_alpha()
-    _player = pygame.image.load(os.path.join(settings.ASSETS_DIR, settings.PLAYER_SPRITE_FILE)).convert_alpha()
+# — Private originals (populated in init_assets) —
+_orig_floor  = None
+_orig_wall   = None
+_orig_player = None
 
 def make_light_mask(r):
     mask = pygame.Surface((r*2, r*2), flags=pygame.SRCALPHA)
-    for rad in range(r, 0, -1):
-        a = int(255 * (rad / r))
-        pygame.draw.circle(mask, (0,0,0,a), (r, r), rad)
+    for radius in range(r, 0, -1):
+        a = int(255 * (radius / r))
+        pygame.draw.circle(mask, (0,0,0,a), (r, r), radius)
     return mask
 
+def init_assets():
+    """
+    Call once after pygame.init() and display.set_mode().
+    Loads original images into memory so update_zoom can rescale them.
+    """
+    global _orig_floor, _orig_wall, _orig_player
+
+    _orig_floor  = pygame.image.load(
+        os.path.join(settings.ASSETS_DIR, settings.FLOOR_TILE_FILE)
+    ).convert_alpha()
+    _orig_wall   = pygame.image.load(
+        os.path.join(settings.ASSETS_DIR, settings.WALL_TILE_FILE)
+    ).convert_alpha()
+    _orig_player = pygame.image.load(
+        os.path.join(settings.ASSETS_DIR, settings.PLAYER_SPRITE_FILE)
+    ).convert_alpha()
+
 def update_zoom(new_size):
-    global TILE_SIZE, floor_img, wall_img, player_img, LIGHT_RADIUS, light_mask
+    """
+    Rescale all sprites & recompute light mask & move_speed.
+    Requires that init_assets() has run.
+    """
+    global TILE_SIZE, floor_img, wall_img, player_img
+    global LIGHT_RADIUS, light_mask, move_speed
 
-    if _floor is None:
-        init_assets()
+    TILE_SIZE = max(1, new_size)
 
-    # clamp to min/max tiles-across converted to pixels
-    min_px = settings.SCREEN_W // settings.MIN_TILES_ACROSS
-    max_px = settings.SCREEN_W // settings.MAX_TILES_ACROSS
-    size = max(min_px, min(max_px, new_size))
-    TILE_SIZE = size
+    # Rescale from originals
+    floor_img  = pygame.transform.scale(_orig_floor,  (TILE_SIZE, TILE_SIZE))
+    wall_img   = pygame.transform.scale(_orig_wall,   (TILE_SIZE, TILE_SIZE))
+    player_img = pygame.transform.scale(_orig_player, (TILE_SIZE, TILE_SIZE))
 
-    floor_img  = pygame.transform.scale(_floor,  (size, size))
-    wall_img   = pygame.transform.scale(_wall,   (size, size))
-    player_img = pygame.transform.scale(_player, (size, size))
-
-    LIGHT_RADIUS = size * 3
+    # Light mask
+    LIGHT_RADIUS = TILE_SIZE * settings.LIGHT_RADIUS_TILES
     light_mask   = make_light_mask(LIGHT_RADIUS)
+
+    # Movement speed (pixels/sec)
+    move_speed = settings.SPEED_TILES_PER_SEC * TILE_SIZE

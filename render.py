@@ -9,27 +9,24 @@ _radial_mask = None
 _current_radius_px = None
 
 def init_render():
-    """Initialize font after the display is created."""
     global _font
     _font = pygame.font.SysFont(None, 18)
 
 def _make_radial_mask(radius_px):
-    """2R×2R mask whose alpha goes from MAX_DARKNESS at 0 to 0 at R."""
-    size = radius_px * 2
-    surf = pygame.Surface((size, size), flags=pygame.SRCALPHA)
+    size = radius_px*2
+    surf = pygame.Surface((size,size), flags=pygame.SRCALPHA)
     max_a = settings.MAX_DARKNESS
     cx = cy = radius_px
     for y in range(size):
         for x in range(size):
-            dx, dy = x - cx, y - cy
-            d = (dx*dx + dy*dy)**0.5
+            dx, dy = x-cx, y-cy
+            d = (dx*dx+dy*dy)**0.5
             if d < radius_px:
-                a = int(max_a * (1 - d / radius_px))
-                surf.set_at((x, y), (0,0,0,a))
+                a = int(max_a * (1 - d/radius_px))
+                surf.set_at((x,y),(0,0,0,a))
     return surf
 
 def _ensure_radial_mask():
-    """Rebuilds the radial mask if TILE_SIZE or LIGHT_RADIUS_TILES changed."""
     global _radial_mask, _current_radius_px
     ts   = assets.TILE_SIZE
     R_px = settings.LIGHT_RADIUS_TILES * ts
@@ -42,52 +39,41 @@ def draw_hotbar(screen, player):
     total = slots*sz + (slots-1)*pad
     start_x = (settings.SCREEN_W - total)//2
     y = settings.SCREEN_H - sz - 10
-
     for i in range(slots):
         x = start_x + i*(sz+pad)
-        rect = pygame.Rect(x, y, sz, sz)
-        pygame.draw.rect(screen, (50,50,50), rect)
+        rect = pygame.Rect(x,y,sz,sz)
+        pygame.draw.rect(screen,(50,50,50),rect)
         border = (200,200,50) if i==player['selected_slot'] else (100,100,100)
-        pygame.draw.rect(screen, border, rect, 3 if i==player['selected_slot'] else 1)
+        pygame.draw.rect(screen,border,rect,3 if i==player['selected_slot'] else 1)
+        item = player['hotbar'][i]
+        if item:
+            icon = pygame.transform.scale(item['image'],(sz-8,sz-8))
+            screen.blit(icon,(x+4,y+4))
+            cnt = _font.render(str(item['count']),True,(255,255,255))
+            cw,ch = cnt.get_size()
+            screen.blit(cnt,(x+sz-cw-4,y+sz-ch-4))
 
-        itm = player['hotbar'][i]
-        if itm:
-            icon = pygame.transform.scale(itm['image'], (sz-8, sz-8))
-            screen.blit(icon, (x+4, y+4))
-            cnt_surf = _font.render(str(itm['count']), True, (255,255,255))
-            cw, ch = cnt_surf.get_size()
-            screen.blit(cnt_surf, (x+sz-cw-4, y+sz-ch-4))
-
-def draw_world(screen, player, chunks):
-    """
-    1) Draw tiles
-    2) Carve out subtractive radial darkness
-    3) Shade wall-tiles by neighbor-count gradient (1→light, 4→dark)
-    4) Draw player, debug grid, coords, hotbar
-    """
+def draw_world(screen, player, chunks, wall_depths):
     ts    = assets.TILE_SIZE
     cam_x = settings.SCREEN_W//2 - player['px']
     cam_y = settings.SCREEN_H//2 - player['py']
 
     _ensure_radial_mask()
 
-    # 1) Draw floor & walls
+    # 1) Draw tiles
     screen.fill((20,20,30))
-    for (cx, cy), (floor, wall) in chunks.items():
-        world_bx = cx * settings.CHUNK_SIZE
-        world_by = cy * settings.CHUNK_SIZE
-        bx = world_bx * ts + cam_x
-        by = world_by * ts + cam_y
-
+    for (cx,cy),(floor,wall) in chunks.items():
+        bx = cx*settings.CHUNK_SIZE*ts + cam_x
+        by = cy*settings.CHUNK_SIZE*ts + cam_y
         for ly in range(settings.CHUNK_SIZE):
             for lx in range(settings.CHUNK_SIZE):
-                px, py = bx + lx*ts, by + ly*ts
-                if px+ts < 0 or px > settings.SCREEN_W or py+ts < 0 or py > settings.SCREEN_H:
+                px,py = bx+lx*ts, by+ly*ts
+                if px+ts<0 or px>settings.SCREEN_W or py+ts<0 or py>settings.SCREEN_H:
                     continue
                 if floor[ly][lx] == settings.TILE_DIRT:
-                    screen.blit(assets.floor_img, (px, py))
-                if wall[ly][lx] == settings.TILE_DIRT:
-                    screen.blit(assets.wall_img,  (px, py))
+                    screen.blit(assets.floor_img,(px,py))
+                if wall[ly][lx]  == settings.TILE_DIRT:
+                    screen.blit(assets.wall_img,(px,py))
 
     # 2) Subtractive radial darkness
     dark = pygame.Surface((settings.SCREEN_W, settings.SCREEN_H), flags=pygame.SRCALPHA)
@@ -96,20 +82,13 @@ def draw_world(screen, player, chunks):
     dark.blit(_radial_mask,
               (settings.SCREEN_W//2 - R, settings.SCREEN_H//2 - R),
               special_flags=pygame.BLEND_RGBA_SUB)
-    screen.blit(dark, (0,0))
+    screen.blit(dark,(0,0))
 
-    # 3) Neighbor‐count gradient shading
-    alpha_map = {
-        0: 0,
-        1: int(settings.MAX_DARKNESS * 0.15),   # very light rim
-        2: int(settings.MAX_DARKNESS * 0.45),
-        3: int(settings.MAX_DARKNESS * 0.75),
-        4: int(settings.MAX_DARKNESS * 1.00),   # nearly full black
-    }
-
-    for (cx, cy), (floor, wall) in chunks.items():
-        world_bx = cx * settings.CHUNK_SIZE
-        world_by = cy * settings.CHUNK_SIZE
+    # 3) Depth‐based interior shading
+    MAX_DIST = settings.LIGHT_RADIUS_TILES  # or pick another cap
+    for (cx,cy),(floor,wall) in chunks.items():
+        world_bx = cx*settings.CHUNK_SIZE
+        world_by = cy*settings.CHUNK_SIZE
         bx = world_bx * ts + cam_x
         by = world_by * ts + cam_y
 
@@ -117,43 +96,29 @@ def draw_world(screen, player, chunks):
             for lx in range(settings.CHUNK_SIZE):
                 if wall[ly][lx] != settings.TILE_DIRT:
                     continue
+                wx,wy = world_bx+lx, world_by+ly
+                d = wall_depths.get((wx,wy), 0)
+                if d <= 0:
+                    continue   # rim stays fully lit
+                frac = min(d, MAX_DIST) / MAX_DIST
+                a = int(frac * settings.MAX_DARKNESS)
+                tx, ty = bx + lx*ts, by + ly*ts
+                screen.fill((0,0,0,a), rect=pygame.Rect(tx,ty,ts,ts))
 
-                # count orthogonal wall neighbors
-                wx = world_bx + lx
-                wy = world_by + ly
-                count = 0
-                for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
-                    nx, ny = wx+dx, wy+dy
-                    ccx, ix = divmod(nx, settings.CHUNK_SIZE)
-                    ccy, iy = divmod(ny, settings.CHUNK_SIZE)
-                    nb = chunks.get((ccx, ccy))
-                    if nb and nb[1][iy][ix] == settings.TILE_DIRT:
-                        count += 1
-
-                a = alpha_map.get(count, 0)
-                if a > 0:
-                    px = bx + lx*ts
-                    py = by + ly*ts
-                    screen.fill((0,0,0,a),
-                                rect=pygame.Rect(px, py, ts, ts))
-
-    # 4) Draw player at center
+    # 4) Player, debug, coords, hotbar
     screen.blit(assets.player_img,
                 (settings.SCREEN_W//2, settings.SCREEN_H//2))
 
-    # Debug grid
     if settings.DEBUG_MODE:
         r, col = settings.DEBUG_GRID_RADIUS, settings.DEBUG_GRID_COLOR
         for wx in range(player['tx']-r, player['tx']+r+1):
             sx = wx*ts + cam_x
-            pygame.draw.line(screen, col, (sx,0), (sx,settings.SCREEN_H), 1)
+            pygame.draw.line(screen,col,(sx,0),(sx,settings.SCREEN_H),1)
         for wy in range(player['ty']-r, player['ty']+r+1):
             sy = wy*ts + cam_y
-            pygame.draw.line(screen, col, (0,sy), (settings.SCREEN_W,sy), 1)
+            pygame.draw.line(screen,col,(0,sy),(settings.SCREEN_W,sy),1)
 
-    # Coordinates
-    coord_surf = _font.render(f"({player['tx']}, {player['ty']})", True, (255,255,255))
-    screen.blit(coord_surf, (10,10))
+    coord = _font.render(f"({player['tx']}, {player['ty']})", True, (255,255,255))
+    screen.blit(coord,(10,10))
 
-    # Hotbar
     draw_hotbar(screen, player)
