@@ -3,7 +3,7 @@
 # --- Debug Options ---
 DEBUG_MODE        = False
 DEBUG_GRID_COLOR  = (255, 0, 0)
-DEBUG_GRID_RADIUS = 10   # tiles in each direction for debug grid
+DEBUG_GRID_RADIUS = 10
 
 # --- Screen & Frame Settings ---
 FPS = 60
@@ -11,17 +11,17 @@ SCREEN_W = 0   # will be set in main()
 SCREEN_H = 0
 
 # --- Chunk Settings ---
-CHUNK_SIZE  = 16       # tiles per chunk side
-LOAD_RADIUS = 2        # chunks to keep loaded around the player
+CHUNK_SIZE  = 16
+LOAD_RADIUS = 2
 
 # --- Tile IDs ---
 TILE_EMPTY = 0
 TILE_DIRT  = 1
 
-# --- Zoom Range (tiles across screen) ---
-MIN_TILES_ACROSS     = 50   # extreme zoom out
-MAX_TILES_ACROSS     = 16   # extreme zoom in
-DEFAULT_TILES_ACROSS = 28   # starting zoom
+# --- Zoom Range (tiles across) ---
+MIN_TILES_ACROSS     = 50
+MAX_TILES_ACROSS     = 16
+DEFAULT_TILES_ACROSS = 28
 
 # --- Movement Speed (tiles/sec) ---
 SPEED_TILES_PER_SEC = 8
@@ -32,12 +32,18 @@ FLOOR_TILE_FILE    = "tile_floor_dirt.png"
 WALL_TILE_FILE     = "tile_wall_dirt.png"
 PLAYER_SPRITE_FILE = "sprite_player.png"
 
-# --- Spawn Protection (half-extents in tiles) ---
-# Protects all blocks where |x| ≤ WIDTH and |y| ≤ HEIGHT
+# --- Hotbar ---
+HOTBAR_SLOTS     = 10
+HOTBAR_SLOT_SIZE = 40
+HOTBAR_PADDING   = 4
+
+# --- Spawn Protection (tiles) ---
 SPAWN_PROTECT_WIDTH  = 5
 SPAWN_PROTECT_HEIGHT = 5
 
-# Hotbar
-HOTBAR_SLOTS      = 10
-HOTBAR_SLOT_SIZE  = 40    # pixels
-HOTBAR_PADDING    = 4     # px between slots
+# --- Lighting Settings (added) ---
+# how many tiles out the player’s light reaches
+LIGHT_RADIUS_TILES = 6
+
+# maximum darkness alpha (0 = no dark, 255 = pitch black)
+MAX_DARKNESS       = 200
