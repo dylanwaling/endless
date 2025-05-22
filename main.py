@@ -69,9 +69,13 @@ def main():
                 cam_x = settings.SCREEN_W // 2 - player_state['px']
                 cam_y = settings.SCREEN_H // 2 - player_state['py']
 
-                # cast to int to avoid float indices
+                # compute world-tile coords and cast to int
                 gx = int((mx - cam_x) // assets.TILE_SIZE)
                 gy = int((my - cam_y) // assets.TILE_SIZE)
+
+                # prevent editing the block the player is standing on
+                if (gx, gy) == (player_state['tx'], player_state['ty']):
+                    continue
 
                 ccx, lx = divmod(gx, settings.CHUNK_SIZE)
                 ccy, ly = divmod(gy, settings.CHUNK_SIZE)
