@@ -4,10 +4,17 @@ import settings
 import assets
 import world
 
+# ──────────────────────────────────────────────────────────────
+# Player State Initialization
+# ──────────────────────────────────────────────────────────────
+
 def init_player(start_tile_size):
+    """
+    Initialize player state dictionary.
+    """
     state = {
-        'tx': 0, 'ty': 0,             # tile coords
-        'px': 0, 'py': 0,             # pixel coords
+        'tx': 0, 'ty': 0,             # tile coordinates
+        'px': 0, 'py': 0,             # pixel coordinates
         'target_x': 0, 'target_y': 0, # move target in pixels
         'moving': False,
         'hotbar': [None] * settings.HOTBAR_SLOTS,
@@ -20,8 +27,14 @@ def init_player(start_tile_size):
     state['target_y'] = state['py']
     return state
 
-def update_input(state, TILE_SIZE, dt):
-    # Handle quit events here; repost others
+# ──────────────────────────────────────────────────────────────
+# Input & Movement
+# ──────────────────────────────────────────────────────────────
+
+def update_input(state, tile_size, dt):
+    """
+    Handle player input and movement.
+    """
     for ev in pygame.event.get():
         if ev.type == pygame.QUIT:
             pygame.quit()
@@ -32,22 +45,26 @@ def update_input(state, TILE_SIZE, dt):
     if not state['moving']:
         ntx, nty = state['tx'], state['ty']
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_a]: ntx -= 1
-        elif keys[pygame.K_d]: ntx += 1
-        elif keys[pygame.K_w]: nty -= 1
-        elif keys[pygame.K_s]: nty += 1
+        if keys[pygame.K_a]:
+            ntx -= 1
+        elif keys[pygame.K_d]:
+            ntx += 1
+        elif keys[pygame.K_w]:
+            nty -= 1
+        elif keys[pygame.K_s]:
+            nty += 1
 
         if (ntx, nty) != (state['tx'], state['ty']) and world.can_walk(ntx, nty):
             state['tx'], state['ty'] = ntx, nty
-            state['target_x'] = ntx * TILE_SIZE
-            state['target_y'] = nty * TILE_SIZE
+            state['target_x'] = ntx * tile_size
+            state['target_y'] = nty * tile_size
             state['moving'] = True
 
     # Smooth pixel interpolation
     if state['moving']:
         dx = state['target_x'] - state['px']
         dy = state['target_y'] - state['py']
-        dist = (dx*dx + dy*dy)**0.5
+        dist = (dx * dx + dy * dy) ** 0.5
         step = assets.move_speed * dt
         if step >= dist:
             state['px'], state['py'] = state['target_x'], state['target_y']
@@ -62,6 +79,10 @@ def update_input(state, TILE_SIZE, dt):
         key = pygame.K_1 + i if i < 9 else pygame.K_0
         if keys[key]:
             state['selected_slot'] = i
+
+# ──────────────────────────────────────────────────────────────
+# Hotbar & Inventory
+# ──────────────────────────────────────────────────────────────
 
 def add_to_hotbar(state, item_type, image):
     """
@@ -78,6 +99,10 @@ def add_to_hotbar(state, item_type, image):
             'image': image
         }
 
+# ──────────────────────────────────────────────────────────────
+# Block Placement
+# ──────────────────────────────────────────────────────────────
+
 def place_dirt(state, gx, gy, floor, wall):
     """
     On right-click:
@@ -88,22 +113,22 @@ def place_dirt(state, gx, gy, floor, wall):
     slot_idx = state['selected_slot']
     slot = state['hotbar'][slot_idx]
 
-    # must have dirt
-    if not (isinstance(slot, dict) and slot.get('type')=='dirt' and slot.get('count',0)>0):
+    # Must have dirt
+    if not (isinstance(slot, dict) and slot.get('type') == 'dirt' and slot.get('count', 0) > 0):
         return
 
     lx, ly = gx % settings.CHUNK_SIZE, gy % settings.CHUNK_SIZE
 
-    # 1) place floor
+    # 1) Place floor
     if floor[ly][lx] == settings.TILE_EMPTY:
         floor[ly][lx] = settings.TILE_DIRT
         slot['count'] -= 1
 
-    # 2) else place wall (only if floor exists)
+    # 2) Else place wall (only if floor exists)
     elif floor[ly][lx] == settings.TILE_DIRT and wall[ly][lx] == settings.TILE_EMPTY:
         wall[ly][lx] = settings.TILE_DIRT
         slot['count'] -= 1
 
-    # clear empty slot
+    # Clear empty slot
     if slot['count'] <= 0:
         state['hotbar'][slot_idx] = None

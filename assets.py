@@ -1,10 +1,13 @@
 # assets.py
 
-import pygame
 import os
+import pygame
 import settings
 
-# — Globals —
+# ──────────────────────────────────────────────────────────────
+# Globals
+# ──────────────────────────────────────────────────────────────
+
 TILE_SIZE    = None
 floor_img    = None
 wall_img     = None
@@ -13,17 +16,14 @@ LIGHT_RADIUS = None
 light_mask   = None
 move_speed   = None
 
-# — Private originals (populated in init_assets) —
+# Private originals (populated in init_assets)
 _orig_floor  = None
 _orig_wall   = None
 _orig_player = None
 
-def make_light_mask(r):
-    mask = pygame.Surface((r*2, r*2), flags=pygame.SRCALPHA)
-    for radius in range(r, 0, -1):
-        a = int(255 * (radius / r))
-        pygame.draw.circle(mask, (0,0,0,a), (r, r), radius)
-    return mask
+# ──────────────────────────────────────────────────────────────
+# Asset Initialization & Scaling
+# ──────────────────────────────────────────────────────────────
 
 def init_assets():
     """
@@ -63,3 +63,17 @@ def update_zoom(new_size):
 
     # Movement speed (pixels/sec)
     move_speed = settings.SPEED_TILES_PER_SEC * TILE_SIZE
+
+# ──────────────────────────────────────────────────────────────
+# Lighting
+# ──────────────────────────────────────────────────────────────
+
+def make_light_mask(radius):
+    """
+    Create a radial light mask surface.
+    """
+    mask = pygame.Surface((radius * 2, radius * 2), flags=pygame.SRCALPHA)
+    for r in range(radius, 0, -1):
+        alpha = int(255 * (r / radius))
+        pygame.draw.circle(mask, (0, 0, 0, alpha), (radius, radius), r)
+    return mask
