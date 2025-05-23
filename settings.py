@@ -46,9 +46,9 @@ SPAWN_PROTECT_HEIGHT = 5
 LIGHT_RADIUS_TILES = 6
 
 # maximum darkness alpha (0 = no dark, 255 = pitch black)
-MAX_DARKNESS       = 200
+MAX_DARKNESS       = 245
 
 # --- Core Shading Depth (tiles) ---
 # number of tiles from a lit edge before you reach full black.
 # 2–3: tight, quick darkening; 6–8: long gentle fade.
-MAX_CORE_DEPTH     = 4
+MAX_CORE_DEPTH     = 2

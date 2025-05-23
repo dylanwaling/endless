@@ -7,16 +7,14 @@ import assets
 import world
 
 def init_player(start_tile_size):
-    # initial tile coords
     state = {
-        'tx': 0, 'ty': 0,             # tile coords
-        'px': 0, 'py': 0,             # pixel coords
-        'target_x': 0, 'target_y': 0, # movement target
+        'tx': 0, 'ty': 0,
+        'px': 0, 'py': 0,
+        'target_x': 0, 'target_y': 0,
         'moving': False,
         'hotbar': [None]*settings.HOTBAR_SLOTS,
         'selected_slot': 0,
     }
-    # sync pixels to tile center at (0,0)
     ts = start_tile_size
     state['px'] = state['tx'] * ts
     state['py'] = state['ty'] * ts
@@ -25,14 +23,6 @@ def init_player(start_tile_size):
     return state
 
 def update_input(state, TILE_SIZE, dt):
-    # handle quit here
-    for ev in pygame.event.get():
-        if ev.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        # you can forward other events (zoom, dig/build) back to main if desired
-
-    # continuous WASD movement
     keys = pygame.key.get_pressed()
     if not state['moving']:
         ntx, nty = state['tx'], state['ty']
@@ -51,7 +41,6 @@ def update_input(state, TILE_SIZE, dt):
             state['target_y'] = nty * TILE_SIZE
             state['moving'] = True
 
-    # smooth movement interpolation
     if state['moving']:
         dx = state['target_x'] - state['px']
         dy = state['target_y'] - state['py']
@@ -63,3 +52,11 @@ def update_input(state, TILE_SIZE, dt):
         else:
             state['px'] += dx / dist * step
             state['py'] += dy / dist * step
+
+def add_to_hotbar(item, image):
+    # Dummy implementation, replace with your own logic
+    pass
+
+def try_place_from_hotbar(gx, gy, floor, wall):
+    # Dummy implementation, replace with your own logic
+    pass
