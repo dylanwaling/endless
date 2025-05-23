@@ -1,8 +1,8 @@
 import sys
 import pygame
-import settings
-import assets
-import world
+from engine import settings
+from engine import assets
+from game import world
 
 # ──────────────────────────────────────────────────────────────
 # Player State Initialization

@@ -2,7 +2,7 @@
 
 import os
 import pygame
-import settings
+from engine import settings
 
 # ──────────────────────────────────────────────────────────────
 # Globals

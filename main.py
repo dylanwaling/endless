@@ -1,11 +1,11 @@
 import sys
 import pygame
 
-import settings
-import assets
-import world
-import player
-import render
+from engine import settings
+from engine import assets
+from game import world
+from game import player
+from engine import render
 
 def main():
     """

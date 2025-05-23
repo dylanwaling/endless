@@ -1,6 +1,6 @@
 # world.py
 
-import settings
+from engine import settings
 from noise import pnoise2
 from collections import deque
 

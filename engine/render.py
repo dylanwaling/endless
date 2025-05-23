@@ -1,6 +1,6 @@
 import pygame
-import settings
-import assets
+from engine import settings
+from engine import assets
 
 # ──────────────────────────────────────────────────────────────
 # Globals
