@@ -70,7 +70,7 @@ def draw_world(screen, player, chunks, wall_depths):
                     continue
                 if floor[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.floor_img, (px, py))
-                if wall[ly][lx]  == settings.TILE_DIRT:
+                if wall[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.wall_img, (px, py))
 
     # 2) Subtractive radial darkness
@@ -134,3 +134,7 @@ def draw_world(screen, player, chunks, wall_depths):
 
     # 6) Hotbar
     draw_hotbar(screen, player)
+
+def try_place_from_hotbar(gx, gy, floor, wall, layer='wall'):
+    print(f"try_place_from_hotbar called with layer={layer}")
+    # ...rest of your code...

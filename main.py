@@ -98,7 +98,9 @@ def main():
                         floor[ly][lx] = settings.TILE_EMPTY
                         player.add_to_hotbar('dirt', assets.floor_img)
                 else:  # build
-                    player.try_place_from_hotbar(gx, gy, floor, wall)
+                    # Pass layer: right-click (3) places floor, left-click (1) places wall
+                    layer = 'floor' if ev.button == 3 else 'wall'
+                    player.try_place_from_hotbar(gx, gy, floor, wall, layer)
 
         # --- Movement & Chunks ---
         player.update_input(player_state, assets.TILE_SIZE, dt)
