@@ -87,6 +87,10 @@ def draw_world(
     cam_x = settings.SCREEN_W // 2 - player['px']
     cam_y = settings.SCREEN_H // 2 - player['py']
 
+    # Asset sizes
+    edge_thickness = 16  # Your rim edge images are 48x16 (W x H)
+    corner_size = 16     # Your rim corner images are 16x16
+
     # 1) Draw background
     screen.fill((20, 20, 30))
 
@@ -106,10 +110,7 @@ def draw_world(
                 if wall[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.wall_img, (px, py))
 
-    # 3) Draw rim highlights for wall tiles using lines
-    rim_color = (180, 180, 80)  # Bright yellowish rim, adjust as desired
-    rim_width = max(2, ts // 8)  # Rim thickness scales with tile size
-
+    # 3) Draw rim highlights for wall tiles
     for (cx, cy), (floor, wall) in chunks.items():
         base_x = cx * settings.CHUNK_SIZE
         base_y = cy * settings.CHUNK_SIZE
@@ -122,18 +123,47 @@ def draw_world(
                 wx, wy = base_x + lx, base_y + ly
                 px, py = bx + lx * ts, by + ly * ts
 
-                # North edge
+                # North edge (top)
                 if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
-                    pygame.draw.line(screen, rim_color, (px, py), (px + ts, py), rim_width)
-                # South edge
+                    screen.blit(assets.rim_north_img, (px, py))
+                # South edge (bottom)
                 if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
-                    pygame.draw.line(screen, rim_color, (px, py + ts - 1), (px + ts, py + ts - 1), rim_width)
-                # West edge
+                    screen.blit(assets.rim_south_img, (px, py))
+                # West edge (left)
                 if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
-                    pygame.draw.line(screen, rim_color, (px, py), (px, py + ts), rim_width)
-                # East edge
+                    screen.blit(assets.rim_west_img, (px, py))
+                # East edge (right)
                 if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
-                    pygame.draw.line(screen, rim_color, (px + ts - 1, py), (px + ts - 1, py + ts), rim_width)
+                    screen.blit(assets.rim_east_img, (px, py))
+
+                # North-West corner (top-left)
+                if (
+                    _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
+                ):
+                    screen.blit(assets.rim_nw_img, (px, py))
+                # North-East corner (top-right)
+                if (
+                    _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
+                ):
+                    screen.blit(assets.rim_ne_img, (px, py))
+                # South-West corner (bottom-left)
+                if (
+                    _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
+                ):
+                    screen.blit(assets.rim_sw_img, (px, py))
+                # South-East corner (bottom-right)
+                if (
+                    _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                    _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
+                ):
+                    screen.blit(assets.rim_se_img, (px, py))
 
     # 4) Draw player
     screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))

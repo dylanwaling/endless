@@ -27,11 +27,21 @@ rim_south_img: pygame.Surface = None
 rim_east_img: pygame.Surface = None
 rim_west_img: pygame.Surface = None
 
+rim_nw_img: pygame.Surface = None
+rim_ne_img: pygame.Surface = None
+rim_sw_img: pygame.Surface = None
+rim_se_img: pygame.Surface = None
+
 # Add originals for rim overlays
 _orig_rim_north: pygame.Surface = None
 _orig_rim_south: pygame.Surface = None
 _orig_rim_east: pygame.Surface = None
 _orig_rim_west: pygame.Surface = None
+
+_orig_rim_nw: pygame.Surface = None
+_orig_rim_ne: pygame.Surface = None
+_orig_rim_sw: pygame.Surface = None
+_orig_rim_se: pygame.Surface = None
 
 # ──────────────────────────────────────────────────────────────
 # Asset Initialization & Scaling
@@ -52,17 +62,21 @@ def init_assets() -> None:
     """
     global _orig_floor, _orig_wall, _orig_player
     global _orig_rim_north, _orig_rim_south, _orig_rim_east, _orig_rim_west
+    global _orig_rim_nw, _orig_rim_ne, _orig_rim_sw, _orig_rim_se
 
     _orig_floor  = _load_image(settings.FLOOR_TILE_FILE)
     _orig_wall   = _load_image(settings.WALL_TILE_FILE)
     _orig_player = _load_image(settings.PLAYER_SPRITE_FILE)
 
-    # Load rim overlays (originals, not rescaled)
-    ASSET_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets')
-    _orig_rim_north = pygame.image.load(os.path.join(ASSET_DIR, 'rim_north.png')).convert_alpha()
-    _orig_rim_south = pygame.image.load(os.path.join(ASSET_DIR, 'rim_south.png')).convert_alpha()
-    _orig_rim_east  = pygame.image.load(os.path.join(ASSET_DIR, 'rim_east.png')).convert_alpha()
-    _orig_rim_west  = pygame.image.load(os.path.join(ASSET_DIR, 'rim_west.png')).convert_alpha()
+    # Load all rim overlays using _load_image for consistent paths
+    _orig_rim_north = _load_image("rim_north.png")
+    _orig_rim_south = _load_image("rim_south.png")
+    _orig_rim_east  = _load_image("rim_east.png")
+    _orig_rim_west  = _load_image("rim_west.png")
+    _orig_rim_nw    = _load_image("rim_nw.png")
+    _orig_rim_ne    = _load_image("rim_ne.png")
+    _orig_rim_sw    = _load_image("rim_sw.png")
+    _orig_rim_se    = _load_image("rim_se.png")
 
 def update_zoom(new_size: int) -> None:
     """
@@ -72,6 +86,7 @@ def update_zoom(new_size: int) -> None:
     global TILE_SIZE, floor_img, wall_img, player_img
     global LIGHT_RADIUS, light_mask, move_speed
     global rim_north_img, rim_south_img, rim_east_img, rim_west_img
+    global rim_nw_img, rim_ne_img, rim_sw_img, rim_se_img
 
     TILE_SIZE = max(1, new_size)
 
@@ -85,6 +100,11 @@ def update_zoom(new_size: int) -> None:
     rim_south_img = pygame.transform.scale(_orig_rim_south, (TILE_SIZE, TILE_SIZE))
     rim_east_img  = pygame.transform.scale(_orig_rim_east,  (TILE_SIZE, TILE_SIZE))
     rim_west_img  = pygame.transform.scale(_orig_rim_west,  (TILE_SIZE, TILE_SIZE))
+
+    rim_nw_img = pygame.transform.scale(_orig_rim_nw, (TILE_SIZE, TILE_SIZE))
+    rim_ne_img = pygame.transform.scale(_orig_rim_ne, (TILE_SIZE, TILE_SIZE))
+    rim_sw_img = pygame.transform.scale(_orig_rim_sw, (TILE_SIZE, TILE_SIZE))
+    rim_se_img = pygame.transform.scale(_orig_rim_se, (TILE_SIZE, TILE_SIZE))
 
     # Lighting and movement
     LIGHT_RADIUS = TILE_SIZE * settings.LIGHT_RADIUS_TILES
