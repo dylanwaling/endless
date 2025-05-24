@@ -3,19 +3,39 @@ import pygame
 from engine import settings, assets
 from game import world, player
 
-def set_zoom(player_state, new_size):
-    """Helper to update zoom and reposition player."""
+# ──────────────────────────────────────────────────────────────
+# Zoom Handling
+# ──────────────────────────────────────────────────────────────
+
+def set_zoom(player_state: dict, new_size: int) -> None:
+    """
+    Update zoom level and reposition player accordingly.
+    """
     assets.update_zoom(new_size)
     world.load_chunks(player_state['tx'], player_state['ty'])
     px = player_state['tx'] * assets.TILE_SIZE
     py = player_state['ty'] * assets.TILE_SIZE
-    player_state['px'] = px
-    player_state['py'] = py
-    player_state['target_x'] = px
-    player_state['target_y'] = py
+    player_state.update({
+        'px': px,
+        'py': py,
+        'target_x': px,
+        'target_y': py
+    })
 
-def handle_dig_build(ev, player_state, warn_timer, WARN_DURATION):
-    """Handle digging and building logic. Returns (warn_timer, block_changed)."""
+# ──────────────────────────────────────────────────────────────
+# Digging & Building
+# ──────────────────────────────────────────────────────────────
+
+def handle_dig_build(
+    ev: pygame.event.Event,
+    player_state: dict,
+    warn_timer: int,
+    WARN_DURATION: int
+) -> tuple[int, bool]:
+    """
+    Handle digging and building logic.
+    Returns (warn_timer, block_changed).
+    """
     mx, my = ev.pos
     cam_x = settings.SCREEN_W // 2 - player_state['px']
     cam_y = settings.SCREEN_H // 2 - player_state['py']
@@ -48,14 +68,29 @@ def handle_dig_build(ev, player_state, warn_timer, WARN_DURATION):
             floor[ly][lx] = settings.TILE_EMPTY
             player.add_to_hotbar(player_state, 'dirt', assets.floor_img)
             block_changed = True
-    else:
-        # BUILD: unified place—floor or wall
+    elif ev.button == 3:
+        # BUILD: place dirt on floor or wall
         placed = player.place_dirt(player_state, gx, gy, floor, wall)
         if placed:
             block_changed = True
     return warn_timer, block_changed
 
-def handle_events(player_state, default_tile_size, min_px, max_px, warn_timer, WARN_DURATION):
+# ──────────────────────────────────────────────────────────────
+# Main Event Loop
+# ──────────────────────────────────────────────────────────────
+
+def handle_events(
+    player_state: dict,
+    default_tile_size: int,
+    min_px: int,
+    max_px: int,
+    warn_timer: int,
+    WARN_DURATION: int
+) -> tuple[int, bool]:
+    """
+    Handle all pygame events for the main game loop.
+    Returns (warn_timer, block_changed).
+    """
     block_changed = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -67,11 +102,12 @@ def handle_events(player_state, default_tile_size, min_px, max_px, warn_timer, W
             new_size = max(min_px, min(max_px, desired))
             if new_size != assets.TILE_SIZE:
                 set_zoom(player_state, new_size)
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
-            if assets.TILE_SIZE != default_tile_size:
-                set_zoom(player_state, default_tile_size)
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button in (1, 3):
-            warn_timer, changed = handle_dig_build(event, player_state, warn_timer, WARN_DURATION)
-            if changed:
-                block_changed = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 2:
+                if assets.TILE_SIZE != default_tile_size:
+                    set_zoom(player_state, default_tile_size)
+            elif event.button in (1, 3):
+                warn_timer, changed = handle_dig_build(event, player_state, warn_timer, WARN_DURATION)
+                if changed:
+                    block_changed = True
     return warn_timer, block_changed

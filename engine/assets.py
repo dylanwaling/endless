@@ -5,44 +5,45 @@ import pygame
 from engine import settings
 
 # ──────────────────────────────────────────────────────────────
-# Globals
+# Globals (populated by init_assets/update_zoom)
 # ──────────────────────────────────────────────────────────────
 
-TILE_SIZE    = None
-floor_img    = None
-wall_img     = None
-player_img   = None
-LIGHT_RADIUS = None
-light_mask   = None
-move_speed   = None
+TILE_SIZE: int = None
+floor_img: pygame.Surface = None
+wall_img: pygame.Surface = None
+player_img: pygame.Surface = None
+LIGHT_RADIUS: int = None
+light_mask: pygame.Surface = None
+move_speed: float = None
 
-# Private originals (populated in init_assets)
-_orig_floor  = None
-_orig_wall   = None
-_orig_player = None
+# Private originals (used for rescaling)
+_orig_floor: pygame.Surface = None
+_orig_wall: pygame.Surface = None
+_orig_player: pygame.Surface = None
 
 # ──────────────────────────────────────────────────────────────
 # Asset Initialization & Scaling
 # ──────────────────────────────────────────────────────────────
 
-def init_assets():
+def _load_image(filename: str) -> pygame.Surface:
+    """Load an image from the assets directory with alpha support."""
+    path = os.path.join(settings.ASSETS_DIR, filename)
+    try:
+        return pygame.image.load(path).convert_alpha()
+    except pygame.error as e:
+        raise RuntimeError(f"Failed to load asset '{filename}': {e}")
+
+def init_assets() -> None:
     """
+    Loads original images into memory.
     Call once after pygame.init() and display.set_mode().
-    Loads original images into memory so update_zoom can rescale them.
     """
     global _orig_floor, _orig_wall, _orig_player
+    _orig_floor  = _load_image(settings.FLOOR_TILE_FILE)
+    _orig_wall   = _load_image(settings.WALL_TILE_FILE)
+    _orig_player = _load_image(settings.PLAYER_SPRITE_FILE)
 
-    _orig_floor  = pygame.image.load(
-        os.path.join(settings.ASSETS_DIR, settings.FLOOR_TILE_FILE)
-    ).convert_alpha()
-    _orig_wall   = pygame.image.load(
-        os.path.join(settings.ASSETS_DIR, settings.WALL_TILE_FILE)
-    ).convert_alpha()
-    _orig_player = pygame.image.load(
-        os.path.join(settings.ASSETS_DIR, settings.PLAYER_SPRITE_FILE)
-    ).convert_alpha()
-
-def update_zoom(new_size):
+def update_zoom(new_size: int) -> None:
     """
     Rescale all sprites & recompute light mask & move_speed.
     Requires that init_assets() has run.
@@ -57,23 +58,33 @@ def update_zoom(new_size):
     wall_img   = pygame.transform.scale(_orig_wall,   (TILE_SIZE, TILE_SIZE))
     player_img = pygame.transform.scale(_orig_player, (TILE_SIZE, TILE_SIZE))
 
-    # Light mask
+    # Lighting and movement
     LIGHT_RADIUS = TILE_SIZE * settings.LIGHT_RADIUS_TILES
     light_mask   = make_light_mask(LIGHT_RADIUS)
-
-    # Movement speed (pixels/sec)
-    move_speed = settings.SPEED_TILES_PER_SEC * TILE_SIZE
+    move_speed   = settings.SPEED_TILES_PER_SEC * TILE_SIZE
 
 # ──────────────────────────────────────────────────────────────
 # Lighting
 # ──────────────────────────────────────────────────────────────
 
-def make_light_mask(radius):
+def make_light_mask(radius: int) -> pygame.Surface:
     """
-    Create a radial light mask surface.
+    Create a radial light mask surface with a smooth gradient.
     """
     mask = pygame.Surface((radius * 2, radius * 2), flags=pygame.SRCALPHA)
     for r in range(radius, 0, -1):
-        alpha = int(255 * (r / radius))
+        # Use quadratic falloff for a smoother gradient
+        alpha = int(255 * ((r / radius) ** 2))
         pygame.draw.circle(mask, (0, 0, 0, alpha), (radius, radius), r)
     return mask
+
+# ──────────────────────────────────────────────────────────────
+# Utility (optional: for reloading assets at runtime)
+# ──────────────────────────────────────────────────────────────
+
+def reload_assets(new_tile_size: int) -> None:
+    """
+    Reload and rescale all assets. Useful if assets or settings change at runtime.
+    """
+    init_assets()
+    update_zoom(new_tile_size)

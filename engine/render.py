@@ -1,23 +1,20 @@
 import pygame
-from engine import settings
-from engine import assets
+from engine import settings, assets
 
 # ──────────────────────────────────────────────────────────────
 # Globals
 # ──────────────────────────────────────────────────────────────
 
-_font = None
-_radial_mask = None
-_current_radius_px = None
+_font: pygame.font.Font = None
+_radial_mask: pygame.Surface = None
+_current_radius_px: int = None
 
 # ──────────────────────────────────────────────────────────────
 # Initialization
 # ──────────────────────────────────────────────────────────────
 
-def init_render():
-    """
-    Initialize font for rendering.
-    """
+def init_render() -> None:
+    """Initialize font for rendering."""
     global _font
     _font = pygame.font.SysFont(None, 18)
 
@@ -25,10 +22,8 @@ def init_render():
 # Radial Mask Utilities
 # ──────────────────────────────────────────────────────────────
 
-def _make_radial_mask(radius):
-    """
-    Create a radial darkness mask.
-    """
+def _make_radial_mask(radius: int) -> pygame.Surface:
+    """Create a radial darkness mask with smooth falloff."""
     size = radius * 2
     surf = pygame.Surface((size, size), flags=pygame.SRCALPHA)
     max_a = settings.MAX_DARKNESS
@@ -42,10 +37,8 @@ def _make_radial_mask(radius):
                 surf.set_at((x, y), (0, 0, 0, a))
     return surf
 
-def _ensure_radial_mask():
-    """
-    Ensure the radial mask matches the current zoom.
-    """
+def _ensure_radial_mask() -> None:
+    """Ensure the radial mask matches the current zoom."""
     global _radial_mask, _current_radius_px
     ts = assets.TILE_SIZE
     radius_px = settings.LIGHT_RADIUS_TILES * ts
@@ -57,10 +50,8 @@ def _ensure_radial_mask():
 # Hotbar Rendering
 # ──────────────────────────────────────────────────────────────
 
-def draw_hotbar(screen, player):
-    """
-    Draw the player's hotbar.
-    """
+def draw_hotbar(screen: pygame.Surface, player: dict) -> None:
+    """Draw the player's hotbar."""
     slots, sz, pad = settings.HOTBAR_SLOTS, settings.HOTBAR_SLOT_SIZE, settings.HOTBAR_PADDING
     total = slots * sz + (slots - 1) * pad
     x0 = (settings.SCREEN_W - total) // 2
@@ -83,9 +74,14 @@ def draw_hotbar(screen, player):
 # World Rendering
 # ──────────────────────────────────────────────────────────────
 
-def draw_world(screen, player, chunks, wall_depths):
+def draw_world(
+    screen: pygame.Surface,
+    player: dict,
+    chunks: dict,
+    wall_depths: dict
+) -> None:
     """
-    Draw the world, player, and overlays.
+    Draw the world, player, overlays, and UI.
     """
     ts = assets.TILE_SIZE
     cam_x = settings.SCREEN_W // 2 - player['px']
@@ -112,9 +108,11 @@ def draw_world(screen, player, chunks, wall_depths):
     dark = pygame.Surface((settings.SCREEN_W, settings.SCREEN_H), flags=pygame.SRCALPHA)
     dark.fill((0, 0, 0, settings.MAX_DARKNESS))
     radius = _current_radius_px
-    dark.blit(_radial_mask,
-              (settings.SCREEN_W // 2 - radius, settings.SCREEN_H // 2 - radius),
-              special_flags=pygame.BLEND_RGBA_SUB)
+    dark.blit(
+        _radial_mask,
+        (settings.SCREEN_W // 2 - radius, settings.SCREEN_H // 2 - radius),
+        special_flags=pygame.BLEND_RGBA_SUB
+    )
     screen.blit(dark, (0, 0))
 
     # 3) Depth-based gradient shading
@@ -146,22 +144,36 @@ def draw_world(screen, player, chunks, wall_depths):
     # 4) Draw player
     screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))
 
-    # Debug grid
+    # 5) Debug grid overlay
     if settings.DEBUG_MODE:
-        r, col = settings.DEBUG_GRID_RADIUS, settings.DEBUG_GRID_COLOR
-        for wx in range(player['tx'] - r, player['tx'] + r + 1):
-            sx = wx * ts + cam_x
-            pygame.draw.line(screen, col, (sx, 0), (sx, settings.SCREEN_H), 1)
-        for wy in range(player['ty'] - r, player['ty'] + r + 1):
-            sy = wy * ts + cam_y
-            pygame.draw.line(screen, col, (0, sy), (settings.SCREEN_W, sy), 1)
+        _draw_debug_grid(screen, player, ts, cam_x, cam_y)
 
-    # 5) Coordinates
+    # 6) Coordinates
     coord = _font.render(f"({player['tx']}, {player['ty']})", True, (255, 255, 255))
     screen.blit(coord, (10, 10))
 
-    # 6) Hotbar
+    # 7) Hotbar
     draw_hotbar(screen, player)
+
+def _draw_debug_grid(
+    screen: pygame.Surface,
+    player: dict,
+    ts: int,
+    cam_x: int,
+    cam_y: int
+) -> None:
+    """Draw a debug grid overlay centered on the player."""
+    r, col = settings.DEBUG_GRID_RADIUS, settings.DEBUG_GRID_COLOR
+    for wx in range(player['tx'] - r, player['tx'] + r + 1):
+        sx = wx * ts + cam_x
+        pygame.draw.line(screen, col, (sx, 0), (sx, settings.SCREEN_H), 1)
+    for wy in range(player['ty'] - r, player['ty'] + r + 1):
+        sy = wy * ts + cam_y
+        pygame.draw.line(screen, col, (0, sy), (settings.SCREEN_W, sy), 1)
+
+# ──────────────────────────────────────────────────────────────
+# Utility: Hotbar Placement (stub)
+# ──────────────────────────────────────────────────────────────
 
 def try_place_from_hotbar(gx, gy, floor, wall, layer='wall'):
     print(f"try_place_from_hotbar called with layer={layer}")
