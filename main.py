@@ -12,7 +12,7 @@ def initialize():
     settings.SCREEN_W, settings.SCREEN_H = info.current_w, info.current_h
     screen = pygame.display.set_mode((settings.SCREEN_W, settings.SCREEN_H), pygame.FULLSCREEN)
 
-    assets.init_assets()
+    assets.init_assets()  # <-- Call after display is set!
     render.init_render()
 
     default_tile_size = settings.SCREEN_W // settings.DEFAULT_TILES_ACROSS
@@ -20,8 +20,9 @@ def initialize():
     assets.update_zoom(default_tile_size)
     world.load_chunks(player_state['tx'], player_state['ty'])
 
-    min_px = settings.SCREEN_W // settings.MIN_TILES_ACROSS
-    max_px = settings.SCREEN_W // settings.MAX_TILES_ACROSS
+    # Calculate min/max tile size in pixels (min = most zoomed out, max = most zoomed in)
+    min_px = settings.SCREEN_W // settings.MAX_TILES_ACROSS
+    max_px = settings.SCREEN_W // settings.MIN_TILES_ACROSS
 
     warn_font = pygame.font.SysFont(None, 24)
 

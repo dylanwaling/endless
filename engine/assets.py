@@ -21,6 +21,18 @@ _orig_floor: pygame.Surface = None
 _orig_wall: pygame.Surface = None
 _orig_player: pygame.Surface = None
 
+# Add these globals at the top (after the originals)
+rim_north_img: pygame.Surface = None
+rim_south_img: pygame.Surface = None
+rim_east_img: pygame.Surface = None
+rim_west_img: pygame.Surface = None
+
+# Add originals for rim overlays
+_orig_rim_north: pygame.Surface = None
+_orig_rim_south: pygame.Surface = None
+_orig_rim_east: pygame.Surface = None
+_orig_rim_west: pygame.Surface = None
+
 # ──────────────────────────────────────────────────────────────
 # Asset Initialization & Scaling
 # ──────────────────────────────────────────────────────────────
@@ -39,9 +51,18 @@ def init_assets() -> None:
     Call once after pygame.init() and display.set_mode().
     """
     global _orig_floor, _orig_wall, _orig_player
+    global _orig_rim_north, _orig_rim_south, _orig_rim_east, _orig_rim_west
+
     _orig_floor  = _load_image(settings.FLOOR_TILE_FILE)
     _orig_wall   = _load_image(settings.WALL_TILE_FILE)
     _orig_player = _load_image(settings.PLAYER_SPRITE_FILE)
+
+    # Load rim overlays (originals, not rescaled)
+    ASSET_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets')
+    _orig_rim_north = pygame.image.load(os.path.join(ASSET_DIR, 'rim_north.png')).convert_alpha()
+    _orig_rim_south = pygame.image.load(os.path.join(ASSET_DIR, 'rim_south.png')).convert_alpha()
+    _orig_rim_east  = pygame.image.load(os.path.join(ASSET_DIR, 'rim_east.png')).convert_alpha()
+    _orig_rim_west  = pygame.image.load(os.path.join(ASSET_DIR, 'rim_west.png')).convert_alpha()
 
 def update_zoom(new_size: int) -> None:
     """
@@ -50,6 +71,7 @@ def update_zoom(new_size: int) -> None:
     """
     global TILE_SIZE, floor_img, wall_img, player_img
     global LIGHT_RADIUS, light_mask, move_speed
+    global rim_north_img, rim_south_img, rim_east_img, rim_west_img
 
     TILE_SIZE = max(1, new_size)
 
@@ -57,6 +79,12 @@ def update_zoom(new_size: int) -> None:
     floor_img  = pygame.transform.scale(_orig_floor,  (TILE_SIZE, TILE_SIZE))
     wall_img   = pygame.transform.scale(_orig_wall,   (TILE_SIZE, TILE_SIZE))
     player_img = pygame.transform.scale(_orig_player, (TILE_SIZE, TILE_SIZE))
+
+    # Rescale rim overlays to match TILE_SIZE
+    rim_north_img = pygame.transform.scale(_orig_rim_north, (TILE_SIZE, TILE_SIZE))
+    rim_south_img = pygame.transform.scale(_orig_rim_south, (TILE_SIZE, TILE_SIZE))
+    rim_east_img  = pygame.transform.scale(_orig_rim_east,  (TILE_SIZE, TILE_SIZE))
+    rim_west_img  = pygame.transform.scale(_orig_rim_west,  (TILE_SIZE, TILE_SIZE))
 
     # Lighting and movement
     LIGHT_RADIUS = TILE_SIZE * settings.LIGHT_RADIUS_TILES

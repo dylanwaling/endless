@@ -45,8 +45,8 @@ SPEED_TILES_PER_SEC = 8
 # ──────────────────────────────────────────────────────────────
 
 ASSETS_DIR          = "assets"
-FLOOR_TILE_FILE     = "tile_floor_dirt.png"
-WALL_TILE_FILE      = "tile_wall_dirt.png"
+FLOOR_TILE_FILE     = "dirt_floor.png"
+WALL_TILE_FILE      = "dirt_wall.png"
 PLAYER_SPRITE_FILE  = "sprite_player.png"
 
 # ──────────────────────────────────────────────────────────────

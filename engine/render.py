@@ -81,16 +81,16 @@ def draw_world(
     wall_depths: dict
 ) -> None:
     """
-    Draw the world, player, overlays, and UI.
+    Draw the world, player, overlays, and UI with rim-lighting style.
     """
     ts = assets.TILE_SIZE
     cam_x = settings.SCREEN_W // 2 - player['px']
     cam_y = settings.SCREEN_H // 2 - player['py']
 
-    _ensure_radial_mask()
-
-    # 1) Draw tiles
+    # 1) Draw background
     screen.fill((20, 20, 30))
+
+    # 2) Draw tiles (dark tops)
     for (cx, cy), (floor, wall) in chunks.items():
         bx = cx * settings.CHUNK_SIZE * ts + cam_x
         by = cy * settings.CHUNK_SIZE * ts + cam_y
@@ -99,26 +99,17 @@ def draw_world(
                 px, py = bx + lx * ts, by + ly * ts
                 if px + ts < 0 or px > settings.SCREEN_W or py + ts < 0 or py > settings.SCREEN_H:
                     continue
+                # Draw floor if present
                 if floor[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.floor_img, (px, py))
+                # Draw dark wall top if present
                 if wall[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.wall_img, (px, py))
 
-    # 2) Subtractive radial darkness
-    dark = pygame.Surface((settings.SCREEN_W, settings.SCREEN_H), flags=pygame.SRCALPHA)
-    dark.fill((0, 0, 0, settings.MAX_DARKNESS))
-    radius = _current_radius_px
-    dark.blit(
-        _radial_mask,
-        (settings.SCREEN_W // 2 - radius, settings.SCREEN_H // 2 - radius),
-        special_flags=pygame.BLEND_RGBA_SUB
-    )
-    screen.blit(dark, (0, 0))
+    # 3) Draw rim highlights for wall tiles using lines
+    rim_color = (180, 180, 80)  # Bright yellowish rim, adjust as desired
+    rim_width = max(2, ts // 8)  # Rim thickness scales with tile size
 
-    # 3) Depth-based gradient shading
-    max_dist = settings.MAX_CORE_DEPTH
-    W, H = settings.SCREEN_W, settings.SCREEN_H
-    shade = pygame.Surface((W, H), flags=pygame.SRCALPHA)
     for (cx, cy), (floor, wall) in chunks.items():
         base_x = cx * settings.CHUNK_SIZE
         base_y = cy * settings.CHUNK_SIZE
@@ -129,17 +120,20 @@ def draw_world(
                 if wall[ly][lx] != settings.TILE_DIRT:
                     continue
                 wx, wy = base_x + lx, base_y + ly
-                d = wall_depths.get((wx, wy), 0)
-                if d == 0:
-                    continue  # bright rim
-                frac = min(d, max_dist) / max_dist
-                alpha = int(frac * settings.MAX_DARKNESS)
                 px, py = bx + lx * ts, by + ly * ts
-                if px + ts < 0 or px > W or py + ts < 0 or py > H:
-                    continue
-                rect = pygame.Rect(px, py, ts, ts)
-                shade.fill((0, 0, 0, alpha), rect=rect)
-    screen.blit(shade, (0, 0))
+
+                # North edge
+                if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
+                    pygame.draw.line(screen, rim_color, (px, py), (px + ts, py), rim_width)
+                # South edge
+                if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
+                    pygame.draw.line(screen, rim_color, (px, py + ts - 1), (px + ts, py + ts - 1), rim_width)
+                # West edge
+                if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
+                    pygame.draw.line(screen, rim_color, (px, py), (px, py + ts), rim_width)
+                # East edge
+                if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
+                    pygame.draw.line(screen, rim_color, (px + ts - 1, py), (px + ts - 1, py + ts), rim_width)
 
     # 4) Draw player
     screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))
@@ -154,6 +148,18 @@ def draw_world(
 
     # 7) Hotbar
     draw_hotbar(screen, player)
+
+def _get_wall_tile(chunks, wx, wy):
+    """Helper to get wall tile type at world (wx, wy)."""
+    cx, lx = divmod(wx, settings.CHUNK_SIZE)
+    cy, ly = divmod(wy, settings.CHUNK_SIZE)
+    key = (cx, cy)
+    if key not in chunks:
+        return None
+    _, wall = chunks[key]
+    if 0 <= lx < settings.CHUNK_SIZE and 0 <= ly < settings.CHUNK_SIZE:
+        return wall[ly][lx]
+    return None
 
 def _draw_debug_grid(
     screen: pygame.Surface,
