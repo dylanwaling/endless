@@ -3,15 +3,17 @@ import pygame
 from engine import settings
 from engine import assets
 from game import world
+from typing import Dict, Any
 
 # ──────────────────────────────────────────────────────────────
 # Player State Initialization
 # ──────────────────────────────────────────────────────────────
 
-def init_player(start_tile_size):
+def init_player(start_tile_size: int) -> Dict[str, Any]:
     """
-    Initialize player state dictionary.
+    Initialize and return the player state dictionary.
     """
+    ts = start_tile_size
     state = {
         'tx': 0, 'ty': 0,             # tile coordinates
         'px': 0, 'py': 0,             # pixel coordinates
@@ -20,7 +22,6 @@ def init_player(start_tile_size):
         'hotbar': [None] * settings.HOTBAR_SLOTS,
         'selected_slot': 0,
     }
-    ts = start_tile_size
     state['px'] = state['tx'] * ts
     state['py'] = state['ty'] * ts
     state['target_x'] = state['px']
@@ -31,17 +32,18 @@ def init_player(start_tile_size):
 # Input & Movement
 # ──────────────────────────────────────────────────────────────
 
-def update_input(state, tile_size, dt):
+def update_input(state: Dict[str, Any], tile_size: int, dt: float) -> None:
     """
     Handle player input and movement.
     """
+    # Handle quit events
     for ev in pygame.event.get():
         if ev.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         pygame.event.post(ev)
 
-    # WASD movement
+    # WASD movement (one direction per frame)
     if not state['moving']:
         ntx, nty = state['tx'], state['ty']
         keys = pygame.key.get_pressed()
@@ -84,7 +86,7 @@ def update_input(state, tile_size, dt):
 # Hotbar & Inventory
 # ──────────────────────────────────────────────────────────────
 
-def add_to_hotbar(state, item_type, image):
+def add_to_hotbar(state: Dict[str, Any], item_type: str, image: Any) -> None:
     """
     Add one block of item_type to the selected hotbar slot, stacking if possible.
     """
@@ -103,7 +105,13 @@ def add_to_hotbar(state, item_type, image):
 # Block Placement
 # ──────────────────────────────────────────────────────────────
 
-def place_dirt(state, gx, gy, floor, wall):
+def place_dirt(
+    state: Dict[str, Any],
+    gx: int,
+    gy: int,
+    floor: list,
+    wall: list
+) -> None:
     """
     On right-click:
       1) Place a floor if that spot is empty.
