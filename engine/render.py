@@ -129,12 +129,12 @@ def draw_world(
                     # Rim overlays (same offset)
                     if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
                         screen.blit(assets.rim_north_img, (px, wall_draw_y))
-                    if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
-                        screen.blit(assets.rim_south_img, (px, wall_draw_y))
                     if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
                         screen.blit(assets.rim_west_img, (px, wall_draw_y))
                     if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
                         screen.blit(assets.rim_east_img, (px, wall_draw_y))
+                    if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
+                        screen.blit(assets.rim_south_img, (px, wall_draw_y))
                     # Corners
                     if (
                         _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
