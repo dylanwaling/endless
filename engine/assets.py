@@ -8,6 +8,8 @@ from engine import settings
 # Globals (populated by init_assets/update_zoom)
 # ──────────────────────────────────────────────────────────────
 
+WALL_HEIGHT = 72  # Tall wall sprite for 2.5D
+
 TILE_SIZE: int = None
 floor_img: pygame.Surface = None
 wall_img: pygame.Surface = None
@@ -84,27 +86,29 @@ def update_zoom(new_size: int) -> None:
     Requires that init_assets() has run.
     """
     global TILE_SIZE, floor_img, wall_img, player_img
+    global WALL_HEIGHT
     global LIGHT_RADIUS, light_mask, move_speed
     global rim_north_img, rim_south_img, rim_east_img, rim_west_img
     global rim_nw_img, rim_ne_img, rim_sw_img, rim_se_img
 
     TILE_SIZE = max(1, new_size)
+    WALL_HEIGHT = int(TILE_SIZE * 1.5)  # 1.5x tile size for tall wall
 
     # Rescale from originals
     floor_img  = pygame.transform.scale(_orig_floor,  (TILE_SIZE, TILE_SIZE))
-    wall_img   = pygame.transform.scale(_orig_wall,   (TILE_SIZE, TILE_SIZE))
+    wall_img   = pygame.transform.scale(_orig_wall,   (TILE_SIZE, WALL_HEIGHT))
     player_img = pygame.transform.scale(_orig_player, (TILE_SIZE, TILE_SIZE))
 
     # Rescale rim overlays to match TILE_SIZE
-    rim_north_img = pygame.transform.scale(_orig_rim_north, (TILE_SIZE, TILE_SIZE))
-    rim_south_img = pygame.transform.scale(_orig_rim_south, (TILE_SIZE, TILE_SIZE))
-    rim_east_img  = pygame.transform.scale(_orig_rim_east,  (TILE_SIZE, TILE_SIZE))
-    rim_west_img  = pygame.transform.scale(_orig_rim_west,  (TILE_SIZE, TILE_SIZE))
+    rim_north_img = pygame.transform.scale(_orig_rim_north, (TILE_SIZE, WALL_HEIGHT))
+    rim_south_img = pygame.transform.scale(_orig_rim_south, (TILE_SIZE, WALL_HEIGHT))
+    rim_east_img  = pygame.transform.scale(_orig_rim_east,  (TILE_SIZE, WALL_HEIGHT))
+    rim_west_img  = pygame.transform.scale(_orig_rim_west,  (TILE_SIZE, WALL_HEIGHT))
 
-    rim_nw_img = pygame.transform.scale(_orig_rim_nw, (TILE_SIZE, TILE_SIZE))
-    rim_ne_img = pygame.transform.scale(_orig_rim_ne, (TILE_SIZE, TILE_SIZE))
-    rim_sw_img = pygame.transform.scale(_orig_rim_sw, (TILE_SIZE, TILE_SIZE))
-    rim_se_img = pygame.transform.scale(_orig_rim_se, (TILE_SIZE, TILE_SIZE))
+    rim_nw_img = pygame.transform.scale(_orig_rim_nw, (TILE_SIZE, WALL_HEIGHT))
+    rim_ne_img = pygame.transform.scale(_orig_rim_ne, (TILE_SIZE, WALL_HEIGHT))
+    rim_sw_img = pygame.transform.scale(_orig_rim_sw, (TILE_SIZE, WALL_HEIGHT))
+    rim_se_img = pygame.transform.scale(_orig_rim_se, (TILE_SIZE, WALL_HEIGHT))
 
     # Lighting and movement
     LIGHT_RADIUS = TILE_SIZE * settings.LIGHT_RADIUS_TILES

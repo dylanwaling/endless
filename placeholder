@@ -3,57 +3,66 @@ import os
 
 pygame.init()
 
-TILE_SIZE = 48
-EDGE_THICKNESS = 16
-CORNER_SIZE = 16
-ASSET_DIR = os.path.dirname(__file__)
+TILE_W, TILE_H = 48, 48
+WALL_H = 72  # Tall wall sprite for 2.5D effect
+RIM_THICK = 8
+ASSET_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+os.makedirs(ASSET_DIR, exist_ok=True)
 
 def save(img, name):
     pygame.image.save(img, os.path.join(ASSET_DIR, name))
 
-def make_edge(color, direction):
-    surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-    if direction == 'north':
-        pygame.draw.rect(surf, color, (0, 0, TILE_SIZE, EDGE_THICKNESS))
-    elif direction == 'south':
-        pygame.draw.rect(surf, color, (0, TILE_SIZE-EDGE_THICKNESS, TILE_SIZE, EDGE_THICKNESS))
-    elif direction == 'west':
-        pygame.draw.rect(surf, color, (0, 0, EDGE_THICKNESS, TILE_SIZE))
-    elif direction == 'east':
-        pygame.draw.rect(surf, color, (TILE_SIZE-EDGE_THICKNESS, 0, EDGE_THICKNESS, TILE_SIZE))
-    return surf
+# Dirt floor (simple brown)
+floor = pygame.Surface((TILE_W, TILE_H), pygame.SRCALPHA)
+floor.fill((120, 90, 50))
+pygame.draw.rect(floor, (100, 70, 40), (0, 0, TILE_W, TILE_H), 2)
+save(floor, "dirt_floor.png")
 
-def make_corner(color, direction):
-    surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-    if direction == 'nw':
-        pygame.draw.rect(surf, color, (0, 0, CORNER_SIZE, CORNER_SIZE))
-    elif direction == 'ne':
-        pygame.draw.rect(surf, color, (TILE_SIZE-CORNER_SIZE, 0, CORNER_SIZE, CORNER_SIZE))
-    elif direction == 'sw':
-        pygame.draw.rect(surf, color, (0, TILE_SIZE-CORNER_SIZE, CORNER_SIZE, CORNER_SIZE))
-    elif direction == 'se':
-        pygame.draw.rect(surf, color, (TILE_SIZE-CORNER_SIZE, TILE_SIZE-CORNER_SIZE, CORNER_SIZE, CORNER_SIZE))
-    return surf
+# Dirt wall (tall, with a front face)
+wall = pygame.Surface((TILE_W, WALL_H), pygame.SRCALPHA)
+wall.fill((80, 60, 30))
+pygame.draw.rect(wall, (60, 40, 20), (0, 0, TILE_W, TILE_H), 2)
+# Front face (bottom 24px)
+pygame.draw.rect(wall, (100, 80, 40), (0, TILE_H, TILE_W, WALL_H-TILE_H))
+pygame.draw.line(wall, (140, 120, 70), (0, TILE_H), (TILE_W, TILE_H), 2)
+save(wall, "dirt_wall.png")
 
-# Assign a unique solid color to each overlay
-colors = {
-    'north': (255, 0, 0, 255),    # Red
-    'south': (0, 255, 0, 255),    # Green
-    'west':  (0, 0, 255, 255),    # Blue
-    'east':  (255, 255, 0, 255),  # Yellow
-    'nw':    (255, 0, 255, 255),  # Magenta
-    'ne':    (0, 255, 255, 255),  # Cyan
-    'sw':    (255, 128, 0, 255),  # Orange
-    'se':    (128, 0, 255, 255),  # Purple
+# Rim overlay colors for debugging
+rim_colors = {
+    'north': (255, 0, 0, 180),
+    'south': (0, 255, 0, 180),
+    'west':  (0, 0, 255, 180),
+    'east':  (255, 255, 0, 180),
+    'nw':    (255, 0, 255, 180),
+    'ne':    (0, 255, 255, 180),
+    'sw':    (255, 128, 0, 180),
+    'se':    (128, 0, 255, 180),
 }
 
-save(make_edge(colors['north'], 'north'), 'rim_north.png')
-save(make_edge(colors['south'], 'south'), 'rim_south.png')
-save(make_edge(colors['west'],  'west'),  'rim_west.png')
-save(make_edge(colors['east'],  'east'),  'rim_east.png')
-save(make_corner(colors['nw'],  'nw'),    'rim_nw.png')
-save(make_corner(colors['ne'],  'ne'),    'rim_ne.png')
-save(make_corner(colors['sw'],  'sw'),    'rim_sw.png')
-save(make_corner(colors['se'],  'se'),    'rim_se.png')
+# Rim overlays (tall, for 2.5D)
+def make_rim(direction):
+    surf = pygame.Surface((TILE_W, WALL_H), pygame.SRCALPHA)
+    c = rim_colors[direction]
+    if direction == 'north':
+        pygame.draw.rect(surf, c, (0, 0, TILE_W, RIM_THICK))
+    elif direction == 'south':
+        pygame.draw.rect(surf, c, (0, WALL_H-RIM_THICK, TILE_W, RIM_THICK))
+    elif direction == 'west':
+        pygame.draw.rect(surf, c, (0, 0, RIM_THICK, WALL_H))
+    elif direction == 'east':
+        pygame.draw.rect(surf, c, (TILE_W-RIM_THICK, 0, RIM_THICK, WALL_H))
+    elif direction == 'nw':
+        pygame.draw.rect(surf, c, (0, 0, RIM_THICK, RIM_THICK))
+    elif direction == 'ne':
+        pygame.draw.rect(surf, c, (TILE_W-RIM_THICK, 0, RIM_THICK, RIM_THICK))
+    elif direction == 'sw':
+        pygame.draw.rect(surf, c, (0, WALL_H-RIM_THICK, RIM_THICK, RIM_THICK))
+    elif direction == 'se':
+        pygame.draw.rect(surf, c, (TILE_W-RIM_THICK, WALL_H-RIM_THICK, RIM_THICK, RIM_THICK))
+    return surf
 
-print("Colorful placeholder rim overlays generated.")
+for d in rim_colors:
+    save(make_rim(d), f"rim_{d}.png")
+
+print("Generated tall 2.5D placeholder assets.")

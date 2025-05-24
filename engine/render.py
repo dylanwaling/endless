@@ -80,21 +80,15 @@ def draw_world(
     chunks: dict,
     wall_depths: dict
 ) -> None:
-    """
-    Draw the world, player, overlays, and UI with rim-lighting style.
-    """
     ts = assets.TILE_SIZE
+    wall_h = assets.WALL_HEIGHT
     cam_x = settings.SCREEN_W // 2 - player['px']
     cam_y = settings.SCREEN_H // 2 - player['py']
-
-    # Asset sizes
-    edge_thickness = 16  # Your rim edge images are 48x16 (W x H)
-    corner_size = 16     # Your rim corner images are 16x16
 
     # 1) Draw background
     screen.fill((20, 20, 30))
 
-    # 2) Draw tiles (dark tops)
+    # 2) Draw floor tiles
     for (cx, cy), (floor, wall) in chunks.items():
         bx = cx * settings.CHUNK_SIZE * ts + cam_x
         by = cy * settings.CHUNK_SIZE * ts + cam_y
@@ -103,14 +97,13 @@ def draw_world(
                 px, py = bx + lx * ts, by + ly * ts
                 if px + ts < 0 or px > settings.SCREEN_W or py + ts < 0 or py > settings.SCREEN_H:
                     continue
-                # Draw floor if present
                 if floor[ly][lx] == settings.TILE_DIRT:
                     screen.blit(assets.floor_img, (px, py))
-                # Draw dark wall top if present
-                if wall[ly][lx] == settings.TILE_DIRT:
-                    screen.blit(assets.wall_img, (px, py))
 
-    # 3) Draw rim highlights for wall tiles
+    # 3) Draw player (centered)
+    screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))
+
+    # 4) Draw tall wall tiles and rim overlays (overlapping the tile below)
     for (cx, cy), (floor, wall) in chunks.items():
         base_x = cx * settings.CHUNK_SIZE
         base_y = cy * settings.CHUNK_SIZE
@@ -122,48 +115,45 @@ def draw_world(
                     continue
                 wx, wy = base_x + lx, base_y + ly
                 px, py = bx + lx * ts, by + ly * ts
+                wall_draw_y = py - (wall_h - ts)  # Draw so bottom aligns with tile
 
-                # North edge (top)
+                # Draw tall wall
+                screen.blit(assets.wall_img, (px, wall_draw_y))
+
+                # Draw rim overlays (same offset)
                 if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_north_img, (px, py))
-                # South edge (bottom)
+                    screen.blit(assets.rim_north_img, (px, wall_draw_y))
                 if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_south_img, (px, py))
-                # West edge (left)
+                    screen.blit(assets.rim_south_img, (px, wall_draw_y))
                 if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_west_img, (px, py))
-                # East edge (right)
+                    screen.blit(assets.rim_west_img, (px, wall_draw_y))
                 if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_east_img, (px, py))
-
-                # Then draw corner overlays so they appear on top
+                    screen.blit(assets.rim_east_img, (px, wall_draw_y))
+                # Corners
                 if (
                     _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
                 ):
-                    screen.blit(assets.rim_nw_img, (px, py))
+                    screen.blit(assets.rim_nw_img, (px, wall_draw_y))
                 if (
                     _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
                 ):
-                    screen.blit(assets.rim_ne_img, (px, py))
+                    screen.blit(assets.rim_ne_img, (px, wall_draw_y))
                 if (
                     _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
                 ):
-                    screen.blit(assets.rim_sw_img, (px, py))
+                    screen.blit(assets.rim_sw_img, (px, wall_draw_y))
                 if (
                     _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
                 ):
-                    screen.blit(assets.rim_se_img, (px, py))
-
-    # 4) Draw player
-    screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))
+                    screen.blit(assets.rim_se_img, (px, wall_draw_y))
 
     # 5) Debug grid overlay
     if settings.DEBUG_MODE:
