@@ -111,19 +111,20 @@ def place_dirt(
     gy: int,
     floor: list,
     wall: list
-) -> None:
+) -> bool:
     """
     On right-click:
       1) Place a floor if that spot is empty.
       2) Else if there's a floor and no wall, place a wall.
     Consumes one dirt from the selected hotbar slot.
+    Returns True if a block was placed, False otherwise.
     """
     slot_idx = state['selected_slot']
     slot = state['hotbar'][slot_idx]
 
     # Must have dirt
     if not (isinstance(slot, dict) and slot.get('type') == 'dirt' and slot.get('count', 0) > 0):
-        return
+        return False
 
     lx, ly = gx % settings.CHUNK_SIZE, gy % settings.CHUNK_SIZE
 
@@ -131,12 +132,17 @@ def place_dirt(
     if floor[ly][lx] == settings.TILE_EMPTY:
         floor[ly][lx] = settings.TILE_DIRT
         slot['count'] -= 1
+        if slot['count'] <= 0:
+            state['hotbar'][slot_idx] = None
+        return True
 
     # 2) Else place wall (only if floor exists)
     elif floor[ly][lx] == settings.TILE_DIRT and wall[ly][lx] == settings.TILE_EMPTY:
         wall[ly][lx] = settings.TILE_DIRT
         slot['count'] -= 1
+        if slot['count'] <= 0:
+            state['hotbar'][slot_idx] = None
+        return True
 
-    # Clear empty slot
-    if slot['count'] <= 0:
-        state['hotbar'][slot_idx] = None
+    # No block placed
+    return False

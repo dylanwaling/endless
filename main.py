@@ -44,17 +44,22 @@ def game_loop(screen, player_state, default_tile_size, min_px, max_px, warn_font
         dt = clock.tick(settings.FPS) / 1000.0
 
         # Handle events (including quit)
-        warn_timer = events.handle_events(player_state, default_tile_size, min_px, max_px, warn_timer, WARN_DURATION)
+        warn_timer, block_changed = events.handle_events(
+            player_state, default_tile_size, min_px, max_px, warn_timer, WARN_DURATION
+        )
 
         # Update player input and movement (no event.get() here)
         player.update_input(player_state, assets.TILE_SIZE, dt)
 
-        # Only reload chunks and recompute wall depths if player moved to a new tile
+        # Only reload chunks if player moved to a new tile (no wall_depths update here)
         if (player_state['tx'], player_state['ty']) != (player_state['_last_tx'], player_state['_last_ty']):
             world.load_chunks(player_state['tx'], player_state['ty'])
-            wall_depths = world.compute_wall_depths(world.chunks)
             player_state['_last_tx'] = player_state['tx']
             player_state['_last_ty'] = player_state['ty']
+
+        # Only recompute wall depths if a block was placed or broken
+        if block_changed:
+            wall_depths = world.compute_wall_depths(world.chunks)
 
         render.draw_world(screen, player_state, world.chunks, wall_depths)
 
