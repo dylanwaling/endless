@@ -15,9 +15,9 @@ def initialize():
     assets.init_assets()
     render.init_render()
 
-    default_ts = settings.SCREEN_W // settings.DEFAULT_TILES_ACROSS
-    player_state = player.init_player(default_ts)
-    assets.update_zoom(default_ts)
+    default_tile_size = settings.SCREEN_W // settings.DEFAULT_TILES_ACROSS
+    player_state = player.init_player(default_tile_size)
+    assets.update_zoom(default_tile_size)
     world.load_chunks(player_state['tx'], player_state['ty'])
 
     min_px = settings.SCREEN_W // settings.MIN_TILES_ACROSS
@@ -25,20 +25,37 @@ def initialize():
 
     warn_font = pygame.font.SysFont(None, 24)
 
-    return screen, player_state, default_ts, min_px, max_px, warn_font
+    # Track last player tile position for chunk loading
+    player_state['_last_tx'] = player_state['tx']
+    player_state['_last_ty'] = player_state['ty']
 
-def game_loop(screen, player_state, default_ts, min_px, max_px, warn_font):
+    # Compute wall depths once at start
+    wall_depths = world.compute_wall_depths(world.chunks)
+
+    return screen, player_state, default_tile_size, min_px, max_px, warn_font, wall_depths
+
+def game_loop(screen, player_state, default_tile_size, min_px, max_px, warn_font, wall_depths):
     warn_timer = 0.0
     WARN_DURATION = 1.5
     clock = pygame.time.Clock()
     running = True
+
     while running:
         dt = clock.tick(settings.FPS) / 1000.0
 
-        warn_timer = events.handle_events(player_state, default_ts, min_px, max_px, warn_timer, WARN_DURATION)
+        # Handle events (including quit)
+        warn_timer = events.handle_events(player_state, default_tile_size, min_px, max_px, warn_timer, WARN_DURATION)
+
+        # Update player input and movement (no event.get() here)
         player.update_input(player_state, assets.TILE_SIZE, dt)
-        world.load_chunks(player_state['tx'], player_state['ty'])
-        wall_depths = world.compute_wall_depths(world.chunks)
+
+        # Only reload chunks and recompute wall depths if player moved to a new tile
+        if (player_state['tx'], player_state['ty']) != (player_state['_last_tx'], player_state['_last_ty']):
+            world.load_chunks(player_state['tx'], player_state['ty'])
+            wall_depths = world.compute_wall_depths(world.chunks)
+            player_state['_last_tx'] = player_state['tx']
+            player_state['_last_ty'] = player_state['ty']
+
         render.draw_world(screen, player_state, world.chunks, wall_depths)
 
         if warn_timer > 0:
@@ -52,8 +69,8 @@ def game_loop(screen, player_state, default_ts, min_px, max_px, warn_font):
     sys.exit()
 
 def main():
-    screen, player_state, default_ts, min_px, max_px, warn_font = initialize()
-    game_loop(screen, player_state, default_ts, min_px, max_px, warn_font)
+    screen, player_state, default_tile_size, min_px, max_px, warn_font, wall_depths = initialize()
+    game_loop(screen, player_state, default_tile_size, min_px, max_px, warn_font, wall_depths)
 
 if __name__ == "__main__":
     main()
