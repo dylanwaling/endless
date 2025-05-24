@@ -136,28 +136,25 @@ def draw_world(
                 if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
                     screen.blit(assets.rim_east_img, (px, py))
 
-                # North-West corner (top-left)
+                # Then draw corner overlays so they appear on top
                 if (
                     _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
                 ):
                     screen.blit(assets.rim_nw_img, (px, py))
-                # North-East corner (top-right)
                 if (
                     _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
                 ):
                     screen.blit(assets.rim_ne_img, (px, py))
-                # South-West corner (bottom-left)
                 if (
                     _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
                 ):
                     screen.blit(assets.rim_sw_img, (px, py))
-                # South-East corner (bottom-right)
                 if (
                     _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
                     _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and

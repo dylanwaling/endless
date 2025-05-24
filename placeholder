@@ -1,0 +1,59 @@
+import pygame
+import os
+
+pygame.init()
+
+TILE_SIZE = 48
+EDGE_THICKNESS = 16
+CORNER_SIZE = 16
+ASSET_DIR = os.path.dirname(__file__)
+
+def save(img, name):
+    pygame.image.save(img, os.path.join(ASSET_DIR, name))
+
+def make_edge(color, direction):
+    surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    if direction == 'north':
+        pygame.draw.rect(surf, color, (0, 0, TILE_SIZE, EDGE_THICKNESS))
+    elif direction == 'south':
+        pygame.draw.rect(surf, color, (0, TILE_SIZE-EDGE_THICKNESS, TILE_SIZE, EDGE_THICKNESS))
+    elif direction == 'west':
+        pygame.draw.rect(surf, color, (0, 0, EDGE_THICKNESS, TILE_SIZE))
+    elif direction == 'east':
+        pygame.draw.rect(surf, color, (TILE_SIZE-EDGE_THICKNESS, 0, EDGE_THICKNESS, TILE_SIZE))
+    return surf
+
+def make_corner(color, direction):
+    surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+    if direction == 'nw':
+        pygame.draw.rect(surf, color, (0, 0, CORNER_SIZE, CORNER_SIZE))
+    elif direction == 'ne':
+        pygame.draw.rect(surf, color, (TILE_SIZE-CORNER_SIZE, 0, CORNER_SIZE, CORNER_SIZE))
+    elif direction == 'sw':
+        pygame.draw.rect(surf, color, (0, TILE_SIZE-CORNER_SIZE, CORNER_SIZE, CORNER_SIZE))
+    elif direction == 'se':
+        pygame.draw.rect(surf, color, (TILE_SIZE-CORNER_SIZE, TILE_SIZE-CORNER_SIZE, CORNER_SIZE, CORNER_SIZE))
+    return surf
+
+# Assign a unique solid color to each overlay
+colors = {
+    'north': (255, 0, 0, 255),    # Red
+    'south': (0, 255, 0, 255),    # Green
+    'west':  (0, 0, 255, 255),    # Blue
+    'east':  (255, 255, 0, 255),  # Yellow
+    'nw':    (255, 0, 255, 255),  # Magenta
+    'ne':    (0, 255, 255, 255),  # Cyan
+    'sw':    (255, 128, 0, 255),  # Orange
+    'se':    (128, 0, 255, 255),  # Purple
+}
+
+save(make_edge(colors['north'], 'north'), 'rim_north.png')
+save(make_edge(colors['south'], 'south'), 'rim_south.png')
+save(make_edge(colors['west'],  'west'),  'rim_west.png')
+save(make_edge(colors['east'],  'east'),  'rim_east.png')
+save(make_corner(colors['nw'],  'nw'),    'rim_nw.png')
+save(make_corner(colors['ne'],  'ne'),    'rim_ne.png')
+save(make_corner(colors['sw'],  'sw'),    'rim_sw.png')
+save(make_corner(colors['se'],  'se'),    'rim_se.png')
+
+print("Colorful placeholder rim overlays generated.")
