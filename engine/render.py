@@ -88,7 +88,10 @@ def draw_world(
     # 1) Draw background
     screen.fill((20, 20, 30))
 
-    # 2) Draw floor tiles
+    # 2) Collect drawables (floors, player, walls) with their y-sorting key
+    drawables = []
+
+    # Floor tiles
     for (cx, cy), (floor, wall) in chunks.items():
         bx = cx * settings.CHUNK_SIZE * ts + cam_x
         by = cy * settings.CHUNK_SIZE * ts + cam_y
@@ -98,12 +101,15 @@ def draw_world(
                 if px + ts < 0 or px > settings.SCREEN_W or py + ts < 0 or py > settings.SCREEN_H:
                     continue
                 if floor[ly][lx] == settings.TILE_DIRT:
-                    screen.blit(assets.floor_img, (px, py))
+                    drawables.append((py, lambda px=px, py=py: screen.blit(assets.floor_img, (px, py))))
 
-    # 3) Draw player (centered)
-    screen.blit(assets.player_img, (settings.SCREEN_W // 2, settings.SCREEN_H // 2))
+    # Player (draw at screen center, sort by their feet's screen y)
+    player_screen_x = settings.SCREEN_W // 2
+    player_screen_y = settings.SCREEN_H // 2
+    player_feet_screen_y = player_screen_y + assets.TILE_SIZE  # feet in screen coords
+    drawables.append((player_feet_screen_y - 0.1, lambda: screen.blit(assets.player_img, (player_screen_x, player_screen_y))))
 
-    # 4) Draw tall wall tiles and rim overlays (overlapping the tile below)
+    # Walls (drawn so their bottom aligns with tile)
     for (cx, cy), (floor, wall) in chunks.items():
         base_x = cx * settings.CHUNK_SIZE
         base_y = cy * settings.CHUNK_SIZE
@@ -115,45 +121,53 @@ def draw_world(
                     continue
                 wx, wy = base_x + lx, base_y + ly
                 px, py = bx + lx * ts, by + ly * ts
-                wall_draw_y = py - (wall_h - ts)  # Draw so bottom aligns with tile
+                wall_draw_y = py - (wall_h - ts)
+                # Use the bottom of the wall sprite for sorting
+                sort_y = wall_draw_y + wall_h
+                def draw_wall(px=px, wall_draw_y=wall_draw_y, wx=wx, wy=wy):
+                    screen.blit(assets.wall_img, (px, wall_draw_y))
+                    # Rim overlays (same offset)
+                    if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
+                        screen.blit(assets.rim_north_img, (px, wall_draw_y))
+                    if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
+                        screen.blit(assets.rim_south_img, (px, wall_draw_y))
+                    if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
+                        screen.blit(assets.rim_west_img, (px, wall_draw_y))
+                    if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
+                        screen.blit(assets.rim_east_img, (px, wall_draw_y))
+                    # Corners
+                    if (
+                        _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
+                    ):
+                        screen.blit(assets.rim_nw_img, (px, wall_draw_y))
+                    if (
+                        _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
+                    ):
+                        screen.blit(assets.rim_ne_img, (px, wall_draw_y))
+                    if (
+                        _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
+                    ):
+                        screen.blit(assets.rim_sw_img, (px, wall_draw_y))
+                    if (
+                        _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                        _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
+                    ):
+                        screen.blit(assets.rim_se_img, (px, wall_draw_y))
+                drawables.append((sort_y, draw_wall))
 
-                # Draw tall wall
-                screen.blit(assets.wall_img, (px, wall_draw_y))
+    # Sort by y (painter's algorithm)
+    drawables.sort(key=lambda tup: tup[0])
 
-                # Draw rim overlays (same offset)
-                if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_north_img, (px, wall_draw_y))
-                if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_south_img, (px, wall_draw_y))
-                if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_west_img, (px, wall_draw_y))
-                if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
-                    screen.blit(assets.rim_east_img, (px, wall_draw_y))
-                # Corners
-                if (
-                    _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
-                ):
-                    screen.blit(assets.rim_nw_img, (px, wall_draw_y))
-                if (
-                    _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
-                ):
-                    screen.blit(assets.rim_ne_img, (px, wall_draw_y))
-                if (
-                    _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
-                ):
-                    screen.blit(assets.rim_sw_img, (px, wall_draw_y))
-                if (
-                    _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
-                    _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
-                ):
-                    screen.blit(assets.rim_se_img, (px, wall_draw_y))
+    # Draw in order
+    for _, draw_fn in drawables:
+        draw_fn()
 
     # 5) Debug grid overlay
     if settings.DEBUG_MODE:
