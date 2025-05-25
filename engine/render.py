@@ -127,11 +127,11 @@ def draw_world(
                 def draw_wall(px=px, wall_draw_y=wall_draw_y, wx=wx, wy=wy):
                     screen.blit(assets.wall_img, (px, wall_draw_y))
                     
-                    # Rim overlays
+                    # Rim presence
                     has_north_rim = _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT
                     has_south_rim = _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT
-                    has_west_rim = _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT
-                    has_east_rim = _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT
+                    has_west_rim  = _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT
+                    has_east_rim  = _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT
 
                     # North rim
                     if has_north_rim:
@@ -139,13 +139,11 @@ def draw_world(
 
                     # West rim
                     if has_west_rim:
-                        offset = 0 if has_north_rim else -ts // 2
-                        screen.blit(assets.rim_west_img, (px, wall_draw_y + offset))
+                        screen.blit(assets.rim_west_img, (px, wall_draw_y))
 
                     # East rim
                     if has_east_rim:
-                        offset = 0 if has_north_rim else -ts // 2
-                        screen.blit(assets.rim_east_img, (px, wall_draw_y + offset))
+                        screen.blit(assets.rim_east_img, (px, wall_draw_y))
 
                     # South rim
                     if has_south_rim:
