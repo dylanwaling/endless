@@ -126,40 +126,59 @@ def draw_world(
                 sort_y = wall_draw_y + wall_h
                 def draw_wall(px=px, wall_draw_y=wall_draw_y, wx=wx, wy=wy):
                     screen.blit(assets.wall_img, (px, wall_draw_y))
-                    # Rim overlays (same offset)
-                    if _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT:
+                    
+                    # Rim overlays
+                    has_north_rim = _get_wall_tile(chunks, wx, wy - 1) != settings.TILE_DIRT
+                    has_south_rim = _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT
+                    has_west_rim = _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT
+                    has_east_rim = _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT
+
+                    # North rim
+                    if has_north_rim:
                         screen.blit(assets.rim_north_img, (px, wall_draw_y))
-                    if _get_wall_tile(chunks, wx - 1, wy) != settings.TILE_DIRT:
-                        screen.blit(assets.rim_west_img, (px, wall_draw_y))
-                    if _get_wall_tile(chunks, wx + 1, wy) != settings.TILE_DIRT:
-                        screen.blit(assets.rim_east_img, (px, wall_draw_y))
-                    if _get_wall_tile(chunks, wx, wy + 1) != settings.TILE_DIRT:
+
+                    # West rim
+                    if has_west_rim:
+                        offset = 0 if has_north_rim else -ts // 2
+                        screen.blit(assets.rim_west_img, (px, wall_draw_y + offset))
+
+                    # East rim
+                    if has_east_rim:
+                        offset = 0 if has_north_rim else -ts // 2
+                        screen.blit(assets.rim_east_img, (px, wall_draw_y + offset))
+
+                    # South rim
+                    if has_south_rim:
                         screen.blit(assets.rim_south_img, (px, wall_draw_y))
+
                     # Corners
-                    if (
-                        _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
-                        _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                    nw_corner = (
+                        not has_north_rim and not has_west_rim and
                         _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
-                    ):
-                        screen.blit(assets.rim_nw_img, (px, wall_draw_y))
-                    if (
-                        _get_wall_tile(chunks, wx, wy - 1) == settings.TILE_DIRT and
-                        _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                    )
+                    ne_corner = (
+                        not has_north_rim and not has_east_rim and
                         _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
-                    ):
-                        screen.blit(assets.rim_ne_img, (px, wall_draw_y))
-                    if (
-                        _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
-                        _get_wall_tile(chunks, wx - 1, wy) == settings.TILE_DIRT and
+                    )
+                    sw_corner = (
+                        not has_south_rim and not has_west_rim and
                         _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
-                    ):
-                        screen.blit(assets.rim_sw_img, (px, wall_draw_y))
-                    if (
-                        _get_wall_tile(chunks, wx, wy + 1) == settings.TILE_DIRT and
-                        _get_wall_tile(chunks, wx + 1, wy) == settings.TILE_DIRT and
+                    )
+                    se_corner = (
+                        not has_south_rim and not has_east_rim and
                         _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
-                    ):
-                        screen.blit(assets.rim_se_img, (px, wall_draw_y))
+                    )
+
+                    if nw_corner:
+                        screen.blit(assets.rim_nw_img, (px, wall_draw_y))
+                    if ne_corner:
+                        screen.blit(assets.rim_ne_img, (px, wall_draw_y))
+                    if sw_corner:
+                        offset = 0 if has_south_rim else -ts // 2
+                        screen.blit(assets.rim_sw_img, (px, wall_draw_y + offset))
+                    if se_corner:
+                        offset = 0 if has_south_rim else -ts // 2
+                        screen.blit(assets.rim_se_img, (px, wall_draw_y + offset))
                 drawables.append((sort_y, draw_wall))
 
     # Sort by y (painter's algorithm)
@@ -186,11 +205,11 @@ def _get_wall_tile(chunks, wx, wy):
     cy, ly = divmod(wy, settings.CHUNK_SIZE)
     key = (cx, cy)
     if key not in chunks:
-        return None
+        return settings.TILE_DIRT  # Default to dirt if chunk is missing
     _, wall = chunks[key]
     if 0 <= lx < settings.CHUNK_SIZE and 0 <= ly < settings.CHUNK_SIZE:
         return wall[ly][lx]
-    return None
+    return settings.TILE_DIRT  # Default to dirt if out of bounds
 
 def _draw_debug_grid(
     screen: pygame.Surface,

@@ -4,7 +4,7 @@
 # Debug Options
 # ──────────────────────────────────────────────────────────────
 
-DEBUG_MODE        = False
+DEBUG_MODE        = True
 DEBUG_GRID_COLOR  = (255, 0, 0)
 DEBUG_GRID_RADIUS = 10
 
