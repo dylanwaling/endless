@@ -149,23 +149,11 @@ def draw_world(
                     if has_south_rim:
                         screen.blit(assets.rim_south_img, (px, wall_draw_y))
 
-                    # Corners
-                    nw_corner = (
-                        not has_north_rim and not has_west_rim and
-                        _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
-                    )
-                    ne_corner = (
-                        not has_north_rim and not has_east_rim and
-                        _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
-                    )
-                    sw_corner = (
-                        not has_south_rim and not has_west_rim and
-                        _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
-                    )
-                    se_corner = (
-                        not has_south_rim and not has_east_rim and
-                        _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
-                    )
+                    # Corners: always draw if diagonal is wall (regardless of side rims)
+                    nw_corner = _get_wall_tile(chunks, wx - 1, wy - 1) != settings.TILE_DIRT
+                    ne_corner = _get_wall_tile(chunks, wx + 1, wy - 1) != settings.TILE_DIRT
+                    sw_corner = _get_wall_tile(chunks, wx - 1, wy + 1) != settings.TILE_DIRT
+                    se_corner = _get_wall_tile(chunks, wx + 1, wy + 1) != settings.TILE_DIRT
 
                     if nw_corner:
                         screen.blit(assets.rim_nw_img, (px, wall_draw_y))
